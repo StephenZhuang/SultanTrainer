@@ -1,0 +1,85 @@
+import Foundation
+
+/// 卡牌类别
+enum CardCategory: String, CaseIterable, Identifiable {
+    case character = "人物"
+    case equipment = "装备"
+    case book = "书籍"
+    case sudan = "苏丹卡"
+    case other = "其他"
+    
+    var id: String { rawValue }
+}
+
+/// 人物属性类型
+enum AttributeType: String, CaseIterable, Identifiable {
+    case physique = "physique"
+    case charm = "charm"
+    case wisdom = "wisdom"
+    case conceal = "conceal"
+    case battle = "battle"
+    case social = "social"
+    case survival = "survival"
+    
+    var id: String { rawValue }
+    
+    /// 中文显示名
+    var displayName: String {
+        switch self {
+        case .physique: return "体魄"
+        case .charm: return "魅力"
+        case .wisdom: return "智慧"
+        case .conceal: return "隐匿"
+        case .battle: return "战斗"
+        case .social: return "社交"
+        case .survival: return "生存"
+        }
+    }
+}
+
+/// 计数器作用域
+enum CounterScope: String, CaseIterable, Identifiable {
+    case session = "局内状态"
+    case persistent = "跨局数据"
+    case achievement = "成就"
+    case completion = "完成记录"
+    case unlock = "解锁"
+    
+    var id: String { rawValue }
+    
+    /// 根据计数器ID前缀判断作用域
+    init?(fromId id: String) {
+        guard let prefix = Int(String(id.prefix(4))) else { return nil }
+        switch prefix {
+        case 7000: self = .session
+        case 7100: self = .persistent
+        case 7200: self = .achievement
+        case 7220: self = .completion
+        case 7230: self = .unlock
+        default: return nil
+        }
+    }
+}
+
+/// 侧边栏导航项
+enum SidebarItem: String, CaseIterable, Identifiable {
+    case quickModify = "快捷修改"
+    case cardManage = "卡牌管理"
+    case characterAttribute = "人物属性"
+    case counter = "计数器"
+    case rite = "仪式"
+    case globalData = "全局数据"
+    
+    var id: String { rawValue }
+    
+    var iconName: String {
+        switch self {
+        case .quickModify: return "bolt.fill"
+        case .cardManage: return "rectangle.stack.fill"
+        case .characterAttribute: return "person.fill"
+        case .counter: return "number"
+        case .rite: return "star.fill"
+        case .globalData: return "globe"
+        }
+    }
+}
