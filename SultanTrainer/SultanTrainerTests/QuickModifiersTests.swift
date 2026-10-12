@@ -30,7 +30,7 @@ final class QuickModifiersTests: XCTestCase {
     func testMaxAllAttributes() {
         var save = createMinimalSave()
         save.cards = [
-            Card(uid: 1, id: 2000001, tag: ["physique": 2, "charm": 3, "wisdom": 1, "conceal": 1, "battle": 1, "social": 1, "survival": 1])
+            Card(uid: 1, templateId: 2000001, tag: ["physique": 2, "charm": 3, "wisdom": 1, "conceal": 1, "battle": 1, "social": 1, "survival": 1])
         ]
 
         modifiers.maxAllAttributes(in: &save, characterUid: 1)
@@ -47,8 +47,8 @@ final class QuickModifiersTests: XCTestCase {
     func testInstantVictory() {
         var save = createMinimalSave()
         save.sudan_card_pool = [
-            Card(uid: 160, id: 2010001, life: 3),
-            Card(uid: 161, id: 2010002, life: 5)
+            Card(uid: 160, templateId: 2010001, life: 3),
+            Card(uid: 161, templateId: 2010002, life: 5)
         ]
         save.success = false
 

@@ -9,8 +9,8 @@ final class CardServiceTests: XCTestCase {
     override func setUp() {
         super.setUp()
         configLoader = ConfigLoader()
-        configLoader.cardTemplates[2000001] = CardTemplate(templateId: 2000001, name: "阿尔图")
-        configLoader.cardTemplates[2000045] = CardTemplate(templateId: 2000045, name: "长剑", equip_slots: ["weapon"])
+        configLoader.cardTemplates[2000001] = CardTemplate(id: 2000001, name: "阿尔图")
+        configLoader.cardTemplates[2000045] = CardTemplate(id: 2000045, name: "长剑", equip_slots: ["weapon"])
         configLoader.cardTemplates[2010001] = CardTemplate(id: 2010001, name: "苏丹卡1")
         cardService = CardService(configLoader: configLoader)
     }

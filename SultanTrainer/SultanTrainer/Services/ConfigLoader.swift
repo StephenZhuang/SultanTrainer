@@ -72,6 +72,83 @@ class ConfigLoader {
     
     // MARK: - Private
     
+    /// 剥除 JSON 中的 JavaScript 风格注释（// 和 /* */）及尾随逗号，返回标准 JSON 数据
+    /// 注意：不会剥除字符串字面量内的 // 或 /* */
+    private func stripJSONComments(from data: Data) throws -> Data {
+        var result = Data()
+        result.reserveCapacity(data.count)
+        
+        var i = 0
+        let bytes = [UInt8](data)
+        let count = bytes.count
+        
+        while i < count {
+            let b = bytes[i]
+            
+            // 字符串字面量：原样保留
+            if b == UInt8(ascii: "\"") {
+                result.append(b)
+                i += 1
+                while i < count {
+                    let sb = bytes[i]
+                    result.append(sb)
+                    if sb == UInt8(ascii: "\\") {
+                        // 转义字符：追加下一个字节
+                        i += 1
+                        if i < count {
+                            result.append(bytes[i])
+                            i += 1
+                        }
+                    } else if sb == UInt8(ascii: "\"") {
+                        i += 1
+                        break
+                    } else {
+                        i += 1
+                    }
+                }
+                continue
+            }
+            
+            // 单行注释 //
+            if b == UInt8(ascii: "/") && i + 1 < count {
+                let next = bytes[i + 1]
+                if next == UInt8(ascii: "/") {
+                    // 跳过到行尾（包括 \n）
+                    while i < count && bytes[i] != UInt8(ascii: "\n") {
+                        i += 1
+                    }
+                    continue
+                } else if next == UInt8(ascii: "*") {
+                    // 块注释 /* ... */
+                    i += 2
+                    while i < count {
+                        if bytes[i] == UInt8(ascii: "*") && i + 1 < count && bytes[i + 1] == UInt8(ascii: "/") {
+                            i += 2
+                            break
+                        }
+                        i += 1
+                    }
+                    continue
+                }
+            }
+            
+            result.append(b)
+            i += 1
+        }
+        
+        // 剥除尾随逗号：,] 和 ,}（包括中间有空白/换行的情况）
+        if let text = String(data: result, encoding: .utf8),
+           let regex = try? NSRegularExpression(pattern: ",(\\s*[\\]\\}])", options: []) {
+            let nsResult = NSMutableString(string: text)
+            regex.replaceMatches(in: nsResult, range: NSRange(text.startIndex..., in: text), withTemplate: "$1")
+            if let finalText = nsResult as String?, let finalData = finalText.data(using: .utf8) {
+                return finalData
+            }
+        }
+        
+        return result
+    }
+    
     private func spotlightSearch() -> URL? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/mdfind")
@@ -102,7 +179,8 @@ class ConfigLoader {
     
     private func loadCardsConfig(from configDir: URL) throws {
         let url = configDir.appendingPathComponent("cards.json")
-        let data = try Data(contentsOf: url)
+        let rawData = try Data(contentsOf: url)
+        let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: CardTemplate].self, from: data) {
             for (_, template) in dict {
                 cardTemplates[template.id] = template
@@ -116,7 +194,8 @@ class ConfigLoader {
     
     private func loadTagConfig(from configDir: URL) throws {
         let url = configDir.appendingPathComponent("tag.json")
-        let data = try Data(contentsOf: url)
+        let rawData = try Data(contentsOf: url)
+        let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: TagTemplate].self, from: data) {
             for (_, template) in dict {
                 tagTemplates[template.id] = template
@@ -130,7 +209,8 @@ class ConfigLoader {
     
     private func loadUpgradeConfig(from configDir: URL) throws {
         let url = configDir.appendingPathComponent("upgrade.json")
-        let data = try Data(contentsOf: url)
+        let rawData = try Data(contentsOf: url)
+        let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: UpgradeTemplate].self, from: data) {
             for (_, template) in dict {
                 upgradeTemplates[template.id] = template
@@ -144,7 +224,8 @@ class ConfigLoader {
     
     private func loadQuestConfig(from configDir: URL) throws {
         let url = configDir.appendingPathComponent("quest.json")
-        let data = try Data(contentsOf: url)
+        let rawData = try Data(contentsOf: url)
+        let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: QuestTemplate].self, from: data) {
             for (_, template) in dict {
                 questTemplates[template.id] = template
@@ -158,7 +239,8 @@ class ConfigLoader {
     
     private func loadOverConfig(from configDir: URL) throws {
         let url = configDir.appendingPathComponent("over.json")
-        let data = try Data(contentsOf: url)
+        let rawData = try Data(contentsOf: url)
+        let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: OverTemplate].self, from: data) {
             for (key, template) in dict {
                 if let id = Int(key) {
