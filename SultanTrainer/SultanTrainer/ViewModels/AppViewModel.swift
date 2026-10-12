@@ -110,6 +110,36 @@ class AppViewModel: ObservableObject {
         }
     }
     
+    /// 刷新存档（重新从磁盘读取）
+    func reloadSave() {
+        guard let savePath = saveManager.currentSavePath else { return }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            saveData = try saveManager.loadSave(from: savePath)
+
+            if let globalPath = saveManager.currentGlobalPath,
+               FileManager.default.fileExists(atPath: globalPath.path) {
+                globalData = try saveManager.loadGlobal(from: globalPath)
+            }
+
+            hasUnsavedChanges = false
+            lastSaveMessage = "已刷新"
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                if self.lastSaveMessage == "已刷新" {
+                    self.lastSaveMessage = nil
+                }
+            }
+        } catch {
+            errorMessage = "刷新失败: \(error.localizedDescription)"
+        }
+
+        isLoading = false
+    }
+
     /// 标记数据已修改
     func markModified() {
         hasUnsavedChanges = true

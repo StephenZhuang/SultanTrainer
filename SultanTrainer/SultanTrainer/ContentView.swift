@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var selectedTab: SidebarItem? = .quickModify
+    @State private var showReloadConfirmation = false
 
     var body: some View {
         NavigationSplitView {
@@ -37,6 +38,20 @@ struct ContentView: View {
                         viewModel.saveGlobal()
                     }
                     .disabled(!viewModel.hasUnsavedChanges)
+
+                    Divider()
+                        .frame(height: 16)
+
+                    Button {
+                        if viewModel.hasUnsavedChanges {
+                            showReloadConfirmation = true
+                        } else {
+                            viewModel.reloadSave()
+                        }
+                    } label: {
+                        Label("刷新", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(viewModel.isLoading)
                 }
             }
         }
@@ -47,6 +62,14 @@ struct ContentView: View {
             Button("确定", role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .alert("刷新存档", isPresented: $showReloadConfirmation) {
+            Button("取消", role: .cancel) {}
+            Button("刷新", role: .destructive) {
+                viewModel.reloadSave()
+            }
+        } message: {
+            Text("当前未保存的修改将丢失，是否继续？")
         }
     }
 
