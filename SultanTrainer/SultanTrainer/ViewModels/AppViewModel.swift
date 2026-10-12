@@ -35,7 +35,7 @@ class AppViewModel: ObservableObject {
         isLoading = true
         
         // 加载游戏配置
-        configLoader.locateConfigDirectory()
+        _ = configLoader.locateConfigDirectory()
         try? configLoader.loadAllConfigs()
         
         // 扫描存档
