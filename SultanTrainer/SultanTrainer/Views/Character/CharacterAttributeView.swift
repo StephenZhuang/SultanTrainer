@@ -7,7 +7,9 @@ struct CharacterAttributeView: View {
     
     private var characters: [Card] {
         guard let save = viewModel.saveData else { return [] }
-        return save.cards.filter { viewModel.cardService.categorize(card: $0) == .character }
+        return save.cards.filter { card in
+            card.bagpos > 0 && viewModel.cardService.categorize(card: card) == .character
+        }
     }
     
     var body: some View {
