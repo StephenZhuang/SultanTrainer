@@ -112,7 +112,7 @@ UI状态字段（`sudan_box_show`, `story_unshow`, `prestige_unshow`, `deadline_
 | `count` | int | 堆叠数量 |
 | `life` | int | 剩余生命（0=无限） |
 | `rareup` | int | 稀有度提升等级 |
-| `tag` | object | 该实例的属性值（覆盖/补充模板tag）。属性值为0时不写入（移除该key） |
+| `tag` | object | 该实例的属性值（覆盖/补充模板tag）。**可修改属性用英文key**（如 `"physique": 3`），分类标签保持中文key（如 `"奴隶": 1`）。**物品卡（type="item"）必须有 `"own": 1` 才能在游戏中显示**。属性值为0时不写入（移除该key） |
 | `equip_slots` | string[] | 可装备槽位类型 |
 | `equips` | array | 已装备的物品（嵌套卡牌实例） |
 | `bag` | int | 背包ID（0=主背包） |

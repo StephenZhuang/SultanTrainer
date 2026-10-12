@@ -42,25 +42,35 @@ struct CardTemplate: Codable, Identifiable {
 
 /// 标签模板，来自 config/tag.json
 struct TagTemplate: Codable {
-    var id: String
+    var id: Int
     var name: String
+    var code: String
     var tag_rank: Int
     var can_visible: Bool
     var can_inherit: Bool
+    var can_add: Bool
     var type: String
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, tag_rank, can_visible, can_inherit, type
+        case id, name, code, tag_rank, can_visible, can_inherit, can_add, type
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = (try? container.decode(String.self, forKey: .id)) ?? ""
+        id = (try? container.decode(Int.self, forKey: .id)) ?? 0
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
+        code = (try? container.decode(String.self, forKey: .code)) ?? ""
         tag_rank = (try? container.decode(Int.self, forKey: .tag_rank)) ?? 0
-        can_visible = (try? container.decode(Bool.self, forKey: .can_visible)) ?? false
-        can_inherit = (try? container.decode(Bool.self, forKey: .can_inherit)) ?? false
+        can_visible = Self.decodeBool(container, forKey: .can_visible)
+        can_inherit = Self.decodeBool(container, forKey: .can_inherit)
+        can_add = Self.decodeBool(container, forKey: .can_add)
         type = (try? container.decode(String.self, forKey: .type)) ?? ""
+    }
+
+    private static func decodeBool(_ container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) -> Bool {
+        if let b = try? container.decode(Bool.self, forKey: key) { return b }
+        if let i = try? container.decode(Int.self, forKey: key) { return i != 0 }
+        return false
     }
 }
 

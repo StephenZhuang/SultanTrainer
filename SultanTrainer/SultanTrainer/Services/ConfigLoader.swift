@@ -102,6 +102,31 @@ class ConfigLoader {
         if template.tag.keys.contains("读物") { return .book }
         return .other
     }
+
+    /// 可修改属性的中文名→英文code映射（can_add=1 且 can_visible=1 的 tag）
+    var zhTagToEn: [String: String] {
+        var result: [String: String] = [:]
+        for (_, template) in tagTemplates {
+            if template.can_add && template.can_visible {
+                result[template.name] = template.code
+            }
+        }
+        return result
+    }
+
+    /// 转换卡牌 tag 的 key：可修改属性用英文 id，其他保持中文
+    func convertTagKeys(_ tag: [String: Int]) -> [String: Int] {
+        let mapping = zhTagToEn
+        var result: [String: Int] = [:]
+        for (key, value) in tag {
+            if let enKey = mapping[key] {
+                result[enKey] = value
+            } else {
+                result[key] = value
+            }
+        }
+        return result
+    }
     
     // MARK: - Private
     
@@ -231,11 +256,11 @@ class ConfigLoader {
         let data = try stripJSONComments(from: rawData)
         if let dict = try? JSONDecoder().decode([String: TagTemplate].self, from: data) {
             for (_, template) in dict {
-                tagTemplates[template.id] = template
+                tagTemplates[template.code] = template
             }
         } else if let array = try? JSONDecoder().decode([TagTemplate].self, from: data) {
             for template in array {
-                tagTemplates[template.id] = template
+                tagTemplates[template.code] = template
             }
         }
     }

@@ -18,8 +18,11 @@ class CardService {
         var card = Card(uid: save.card_uid_index, templateId: templateId, count: count)
 
         if let template = configLoader.cardTemplates[templateId] {
-            card.tag = template.tag
+            card.tag = configLoader.convertTagKeys(template.tag)
             card.equip_slots = template.equip_slots.map { Self.zhEquipToEn[$0] ?? $0 }
+            if template.type == "item" {
+                card.tag["own"] = 1
+            }
         }
 
         let maxBagpos = save.cards.filter { $0.bag == 0 }.map { $0.bagpos }.max() ?? 0
