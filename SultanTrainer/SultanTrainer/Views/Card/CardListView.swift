@@ -4,6 +4,7 @@ struct CardListView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var selectedCardUid: Int?
     @State private var filterCategory: CardCategory? = nil
+    @State private var filterRarity: CardRarity? = nil
     @State private var searchText = ""
     @State private var showPicker = false
     @State private var pickerMode: PickerMode = .add
@@ -25,6 +26,10 @@ struct CardListView: View {
 
         if let category = filterCategory {
             cards = cards.filter { viewModel.cardService.categorize(card: $0) == category }
+        }
+
+        if let rarity = filterRarity {
+            cards = cards.filter { viewModel.configLoader.cardTemplates[$0.templateId]?.rare == rarity.rawValue }
         }
 
         if !searchText.isEmpty {
@@ -71,6 +76,14 @@ struct CardListView: View {
                     Text("全部").tag(nil as CardCategory?)
                     ForEach(CardCategory.allCases) { category in
                         Text(category.rawValue).tag(category as CardCategory?)
+                    }
+                }
+                .frame(width: 120)
+                
+                Picker("品级", selection: $filterRarity) {
+                    Text("全部").tag(nil as CardRarity?)
+                    ForEach(CardRarity.allCases) { rarity in
+                        Text(rarity.displayName).tag(rarity as CardRarity?)
                     }
                 }
                 .frame(width: 120)

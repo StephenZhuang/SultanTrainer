@@ -42,6 +42,11 @@ codesign --sign - ~/Applications/SultanTrainer.app
 2. 代码修改后：重新 `./build.sh` → 覆盖旧版本
 3. 通过 Spotlight 或 Launchpad 启动
 
+## AI 行为约束
+
+- **构建/测试一律后台执行**：使用 `run_in_background: true` 运行 xcodebuild、xcodebuild test 等耗时命令，禁止占用用户屏幕
+- 构建成功后简要报告结果即可，不要在前台跑测试
+
 ## build.sh 规范
 
 - 使用 `set -e` 遇错即停

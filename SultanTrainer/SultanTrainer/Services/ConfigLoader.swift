@@ -69,15 +69,9 @@ class ConfigLoader {
 
     /// 获取苏丹卡等级名称（岩石/青铜/白银/黄金），非苏丹卡返回 nil
     func getSudanCardLevel(templateId: Int) -> String? {
-        guard templateId >= 2010001 && templateId <= 2010016 else { return nil }
-        let position = (templateId - 2010001) % 4
-        switch position {
-        case 0: return "岩石"
-        case 1: return "青铜"
-        case 2: return "白银"
-        case 3: return "黄金"
-        default: return nil
-        }
+        guard let template = cardTemplates[templateId], template.type == "sudan" else { return nil }
+        guard let rarity = CardRarity(rawValue: template.rare) else { return nil }
+        return rarity.displayName
     }
 
     /// 计数器名称映射（硬编码，游戏配置中无此数据）

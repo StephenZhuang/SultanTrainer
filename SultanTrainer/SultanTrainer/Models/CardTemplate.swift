@@ -10,9 +10,10 @@ struct CardTemplate: Codable, Identifiable {
     var title: String
     var tag: [String: Int]
     var equip_slots: [String]
+    var rare: Int
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, text, type, title, tag, equip_slots = "equips"
+        case id, name, text, type, title, tag, equip_slots = "equips", rare
     }
 
     init(from decoder: Decoder) throws {
@@ -24,9 +25,10 @@ struct CardTemplate: Codable, Identifiable {
         title = (try? container.decode(String.self, forKey: .title)) ?? ""
         tag = (try? container.decode([String: Int].self, forKey: .tag)) ?? [:]
         equip_slots = (try? container.decode([String].self, forKey: .equip_slots)) ?? []
+        rare = (try? container.decode(Int.self, forKey: .rare)) ?? 0
     }
 
-    init(id: Int, name: String = "", text: String = "", type: String = "", title: String = "", tag: [String: Int] = [:], equip_slots: [String] = []) {
+    init(id: Int, name: String = "", text: String = "", type: String = "", title: String = "", tag: [String: Int] = [:], equip_slots: [String] = [], rare: Int = 0) {
         self.id = id
         self.name = name
         self.text = text
@@ -34,6 +36,7 @@ struct CardTemplate: Codable, Identifiable {
         self.title = title
         self.tag = tag
         self.equip_slots = equip_slots
+        self.rare = rare
     }
 }
 

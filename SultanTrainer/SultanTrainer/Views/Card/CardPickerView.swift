@@ -5,6 +5,7 @@ struct CardPickerView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var selectedCategory: CardCategory? = nil
+    @State private var selectedRarity: CardRarity? = nil
     @State private var searchText = ""
     @State private var selectedTemplateId: Int?
     
@@ -12,9 +13,19 @@ struct CardPickerView: View {
     
     private var filteredTemplates: [CardTemplate] {
         var templates = Array(viewModel.configLoader.cardTemplates.values)
-        
+
+        // 苏丹卡只保留 2010001-2010016，排除 2000xxx 的重复卡
+        templates = templates.filter {
+            guard $0.type == "sudan" else { return true }
+            return $0.id >= 2010001 && $0.id <= 2010016
+        }
+
         if let category = selectedCategory {
             templates = templates.filter { viewModel.configLoader.categorize(template: $0) == category }
+        }
+        
+        if let rarity = selectedRarity {
+            templates = templates.filter { $0.rare == rarity.rawValue }
         }
         
         if !searchText.isEmpty {
@@ -38,6 +49,14 @@ struct CardPickerView: View {
                 }
                 .frame(width: 120)
                 
+                Picker("品级", selection: $selectedRarity) {
+                    Text("全部").tag(nil as CardRarity?)
+                    ForEach(CardRarity.allCases) { rarity in
+                        Text(rarity.displayName).tag(rarity as CardRarity?)
+                    }
+                }
+                .frame(width: 120)
+                
                 TextField("搜索...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
             }
@@ -48,7 +67,7 @@ struct CardPickerView: View {
             // 卡牌列表
             List(filteredTemplates, selection: $selectedTemplateId) { template in
                 HStack {
-                    Text(template.name.isEmpty ? "\(template.id)" : template.name)
+                    Text(getTemplateName(template: template))
                         .font(.body)
                     Spacer()
                     Text("\(template.id)")
@@ -79,5 +98,13 @@ struct CardPickerView: View {
             .padding()
         }
         .frame(minWidth: 500, minHeight: 400)
+    }
+    
+    private func getTemplateName(template: CardTemplate) -> String {
+        let baseName = template.name.isEmpty ? "\(template.id)" : template.name
+        if let level = viewModel.configLoader.getSudanCardLevel(templateId: template.id) {
+            return "\(baseName) (\(level))"
+        }
+        return baseName
     }
 }

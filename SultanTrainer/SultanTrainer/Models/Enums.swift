@@ -11,6 +11,25 @@ enum CardCategory: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// 卡牌品级
+enum CardRarity: Int, CaseIterable, Identifiable {
+    case rock = 1
+    case bronze = 2
+    case silver = 3
+    case gold = 4
+
+    var id: Int { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .rock: return "岩石"
+        case .bronze: return "青铜"
+        case .silver: return "白银"
+        case .gold: return "黄金"
+        }
+    }
+}
+
 /// 人物属性类型
 enum AttributeType: String, CaseIterable, Identifiable {
     case physique = "physique"
