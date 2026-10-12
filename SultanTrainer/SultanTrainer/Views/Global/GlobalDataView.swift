@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GlobalDataView: View {
     @EnvironmentObject var viewModel: AppViewModel
+    @State private var editingTotalPoint: Int = 0
     
     var body: some View {
         ScrollView {
@@ -17,10 +18,7 @@ struct GlobalDataView: View {
                             GridRow {
                                 Text("总升级点数:")
                                 editableIntField(
-                                    value: Binding(
-                                        get: { viewModel.globalData?.totalPoint ?? 0 },
-                                        set: { viewModel.globalData?.totalPoint = $0 }
-                                    )
+                                    value: $editingTotalPoint
                                 )
                             }
                             GridRow {
@@ -93,8 +91,16 @@ struct GlobalDataView: View {
                     }
                 }
                 .padding()
-                .onChange(of: viewModel.globalData?.totalPoint) { _, _ in
-                    viewModel.markModified()
+                .onAppear {
+                    editingTotalPoint = global.totalPoint
+                }
+                .onChange(of: editingTotalPoint) { oldValue, newValue in
+                    guard oldValue != newValue,
+                          viewModel.globalData?.totalPoint != newValue else { return }
+                    Task { @MainActor in
+                        viewModel.globalData?.totalPoint = newValue
+                        viewModel.markModified()
+                    }
                 }
             } else {
                 Text("全局数据未加载")

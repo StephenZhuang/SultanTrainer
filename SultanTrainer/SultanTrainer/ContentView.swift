@@ -3,10 +3,11 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: AppViewModel
+    @State private var selectedTab: SidebarItem? = .quickModify
 
     var body: some View {
         NavigationSplitView {
-            List(SidebarItem.allCases, selection: $viewModel.selectedSidebarItem) { item in
+            List(SidebarItem.allCases, selection: $selectedTab) { item in
                 Label(item.rawValue, systemImage: item.iconName)
                     .tag(item)
             }
@@ -14,6 +15,11 @@ struct ContentView: View {
             .frame(minWidth: 180)
         } detail: {
             detailView
+        }
+        .onChange(of: selectedTab) { _, newValue in
+            Task { @MainActor in
+                viewModel.selectedSidebarItem = newValue
+            }
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -34,8 +40,11 @@ struct ContentView: View {
                 }
             }
         }
-        .alert("错误", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("确定") { viewModel.errorMessage = nil }
+        .alert("错误", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("确定", role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
@@ -56,7 +65,7 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            switch viewModel.selectedSidebarItem ?? .quickModify {
+            switch selectedTab ?? .quickModify {
             case .quickModify:
                 QuickModifyView()
             case .cardManage:

@@ -8,7 +8,7 @@ struct SultanTrainerApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(viewModel)
-                .onAppear {
+                .task {
                     viewModel.initialize()
                 }
         }

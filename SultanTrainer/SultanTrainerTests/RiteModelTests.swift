@@ -8,23 +8,24 @@ final class RiteModelTests: XCTestCase {
         {
             "uid": 5,
             "id": 5001001,
-            "cards": {
-                "s1": null,
-                "s2": {"uid": 112},
-                "s3": null,
-                "s4": null,
-                "s5": null,
-                "s6": null,
-                "s7": null
-            }
+            "cards": [
+                null,
+                {"uid": 112, "id": 2000001, "count": 1, "life": 0, "rareup": 0, "tag": {}, "equip_slots": [], "equips": [], "bag": 0, "bagpos": 0, "custom_name": "", "custom_text": ""},
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
         }
         """.data(using: .utf8)!
         
         let rite = try JSONDecoder().decode(Rite.self, from: json)
         XCTAssertEqual(rite.uid, 5)
         XCTAssertEqual(rite.id, 5001001)
-        XCTAssertNil(rite.cards["s1"] ?? nil)
-        XCTAssertEqual((rite.cards["s2"] ?? nil)?.uid, 112)
+        XCTAssertEqual(rite.cards.count, 7)
+        XCTAssertNil(rite.cards[0])
+        XCTAssertEqual(rite.cards[1]?.uid, 112)
     }
     
     func testTimingRoundDecoding() throws {

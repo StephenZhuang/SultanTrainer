@@ -23,7 +23,7 @@ final class CardModelTests: XCTestCase {
         
         let card = try JSONDecoder().decode(Card.self, from: json)
         XCTAssertEqual(card.uid, 29)
-        XCTAssertEqual(card.id, 2000001)
+        XCTAssertEqual(card.templateId, 2000001)
         XCTAssertEqual(card.count, 1)
         XCTAssertEqual(card.life, 0)
         XCTAssertEqual(card.tag["physique"], 2)
@@ -75,7 +75,7 @@ final class CardModelTests: XCTestCase {
     }
     
     func testCardIdentifiable() {
-        let card = Card(uid: 42, id: 2000001)
-        XCTAssertEqual(card.id, 2000001)
+        let card = Card(uid: 42, templateId: 2000001)
+        XCTAssertEqual(card.id, 42)
     }
 }

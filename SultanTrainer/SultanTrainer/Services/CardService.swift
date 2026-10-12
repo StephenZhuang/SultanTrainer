@@ -11,7 +11,7 @@ class CardService {
     
     /// 添加卡牌到存档
     func addCard(to save: inout SaveData, templateId: Int, count: Int = 1) {
-        var card = Card(uid: save.card_uid_index, id: templateId, count: count)
+        var card = Card(uid: save.card_uid_index, templateId: templateId, count: count)
         
         if let template = configLoader.cardTemplates[templateId] {
             card.tag = template.tag
@@ -41,8 +41,8 @@ class CardService {
     /// 检查卡牌是否被仪式引用
     func isCardInRite(save: SaveData, cardUid: Int) -> Bool {
         for rite in save.rites {
-            for (_, cardRef) in rite.cards {
-                if let ref = cardRef, ref.uid == cardUid {
+            for card in rite.cards {
+                if let card = card, card.uid == cardUid {
                     return true
                 }
             }
@@ -59,11 +59,11 @@ class CardService {
     
     /// 获取卡牌的分类
     func categorize(card: Card) -> CardCategory {
-        if let template = configLoader.cardTemplates[card.id] {
+        if let template = configLoader.cardTemplates[card.templateId] {
             return configLoader.categorize(template: template)
         }
-        if card.id >= 2010001 && card.id <= 2010016 { return .sudan }
-        if card.id >= 2000001 && card.id <= 2000010 { return .character }
+        if card.templateId >= 2010001 && card.templateId <= 2010016 { return .sudan }
+        if card.templateId >= 2000001 && card.templateId <= 2000010 { return .character }
         return .other
     }
 }

@@ -205,23 +205,25 @@ UI状态字段（`sudan_box_show`, `story_unshow`, `prestige_unshow`, `deadline_
 {
   "uid": 5,
   "id": 5001001,
-  "cards": {
-    "s1": null,
-    "s2": {"uid": 112},
-    "s3": null,
-    "s4": null,
-    "s5": null,
-    "s6": null,
-    "s7": null
-  }
+  "cards": [
+    null,
+    {"uid": 29, "id": 2000001, "count": 1, "life": 0, ...},
+    null,
+    null,
+    null,
+    null,
+    null
+  ]
 }
 ```
 
-| 字段 | 说明 |
-|------|------|
-| `uid` | 仪式实例唯一ID |
-| `id` | 仪式模板ID → config/rite/{id}.json |
-| `cards` | 各槽位中放置的卡牌引用（通过uid关联） |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `uid` | int | 仪式实例唯一ID |
+| `id` | int | 仪式模板ID → config/rite/{id}.json |
+| `cards` | array | 各槽位中放置的卡牌实例，数组长度等于槽位数，空槽为 `null`，非空槽为完整的 Card 对象 |
+
+**注意**：`cards` 是**数组**而非字典，索引对应槽位（`cards[0]` = s1, `cards[1]` = s2, ...）。
 
 ### 6.2 仪式配置文件结构
 

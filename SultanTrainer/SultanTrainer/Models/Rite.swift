@@ -4,12 +4,7 @@ import Foundation
 struct Rite: Codable, Identifiable, Hashable {
     var uid: Int
     var id: Int
-    var cards: [String: CardReference?]
-    
-    /// 仪式槽位中的卡牌引用
-    struct CardReference: Codable, Hashable {
-        var uid: Int
-    }
+    var cards: [Card?]
     
     // MARK: - Codable 容错解码
     
@@ -21,10 +16,10 @@ struct Rite: Codable, Identifiable, Hashable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         uid = try container.decode(Int.self, forKey: .uid)
         self.id = try container.decode(Int.self, forKey: .id)
-        cards = (try? container.decode([String: CardReference?].self, forKey: .cards)) ?? [:]
+        cards = (try? container.decode([Card?].self, forKey: .cards)) ?? []
     }
     
-    init(uid: Int, id: Int, cards: [String: CardReference?] = [:]) {
+    init(uid: Int, id: Int, cards: [Card?] = []) {
         self.uid = uid
         self.id = id
         self.cards = cards

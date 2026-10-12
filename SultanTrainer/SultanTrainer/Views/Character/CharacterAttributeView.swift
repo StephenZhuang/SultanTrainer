@@ -6,7 +6,7 @@ struct CharacterAttributeView: View {
     @State private var editingValues: [String: Int] = [:]
     
     private var characters: [Card] {
-        viewModel.saveData?.cards.filter { $0.id >= 2000001 && $0.id <= 2000010 } ?? []
+        viewModel.saveData?.cards.filter { $0.templateId >= 2000001 && $0.templateId <= 2000010 } ?? []
     }
     
     var body: some View {
@@ -17,7 +17,7 @@ struct CharacterAttributeView: View {
                 Picker("人物", selection: $selectedCharacterUid) {
                     Text("请选择").tag(nil as Int?)
                     ForEach(characters) { card in
-                        Text(viewModel.configLoader.getCardName(id: card.id))
+                        Text(viewModel.configLoader.getCardName(id: card.templateId))
                             .tag(card.uid as Int?)
                     }
                 }
