@@ -47,7 +47,7 @@ class ConfigLoader {
         return cardTemplates[id]?.name ?? "\(id)"
     }
 
-    /// 获取卡牌显示名称：custom_name > 存档角色名（主角卡/分身卡）> 模板名
+    /// 获取卡牌显示名称：custom_name > 存档角色名（主角卡/分身卡）> 模板名（苏丹卡追加等级）
     func getCardDisplayName(card: Card, saveName: String? = nil) -> String {
         if !card.custom_name.isEmpty {
             return card.custom_name
@@ -60,7 +60,24 @@ class ConfigLoader {
                 return saveName + "的分身"
             }
         }
-        return getCardName(id: card.templateId)
+        let baseName = getCardName(id: card.templateId)
+        if let level = getSudanCardLevel(templateId: card.templateId) {
+            return "\(baseName) (\(level))"
+        }
+        return baseName
+    }
+
+    /// 获取苏丹卡等级名称（岩石/青铜/白银/黄金），非苏丹卡返回 nil
+    func getSudanCardLevel(templateId: Int) -> String? {
+        guard templateId >= 2010001 && templateId <= 2010016 else { return nil }
+        let position = (templateId - 2010001) % 4
+        switch position {
+        case 0: return "岩石"
+        case 1: return "青铜"
+        case 2: return "白银"
+        case 3: return "黄金"
+        default: return nil
+        }
     }
 
     /// 获取计数器名称
