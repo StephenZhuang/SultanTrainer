@@ -13,7 +13,7 @@ class CardService {
         self.configLoader = configLoader
     }
     
-    /// 添加卡牌到存档
+    /// 添加卡牌到存档（自动分配到背包下一个空位）
     func addCard(to save: inout SaveData, templateId: Int, count: Int = 1) {
         var card = Card(uid: save.card_uid_index, templateId: templateId, count: count)
 
@@ -21,6 +21,9 @@ class CardService {
             card.tag = template.tag
             card.equip_slots = template.equip_slots.map { Self.zhEquipToEn[$0] ?? $0 }
         }
+
+        let maxBagpos = save.cards.filter { $0.bag == 0 }.map { $0.bagpos }.max() ?? 0
+        card.bagpos = maxBagpos + 1
 
         save.cards.append(card)
         save.card_uid_index += 1

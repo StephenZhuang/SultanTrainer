@@ -17,7 +17,11 @@ struct CardListView: View {
     
     private var filteredCards: [Card] {
         guard let save = viewModel.saveData else { return [] }
-        var cards = save.cards.filter { $0.bag == 0 }
+        var cards = save.cards.filter { $0.bagpos > 0 }
+
+        // 同一 (bag, bagpos) 可能有多张堆叠卡，游戏 UI 只显示第一张
+        var seen = Set<String>()
+        cards = cards.filter { seen.insert("\($0.bag)_\($0.bagpos)").inserted }
 
         if let category = filterCategory {
             cards = cards.filter { viewModel.cardService.categorize(card: $0) == category }
@@ -30,7 +34,10 @@ struct CardListView: View {
             }
         }
 
-        return cards.sorted { $0.bagpos < $1.bagpos }
+        return cards.sorted {
+            if $0.bag != $1.bag { return $0.bag < $1.bag }
+            return $0.bagpos < $1.bagpos
+        }
     }
     
     var body: some View {
