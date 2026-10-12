@@ -7,19 +7,25 @@ struct CounterItem: Identifiable {
 
 struct CounterEditorView: View {
     @EnvironmentObject var viewModel: AppViewModel
-    @State private var filterScope: CounterScope? = nil
     @State private var searchText = ""
     @State private var editingCounterId: String?
     @State private var editingValue: Int = 0
     
+    /// 金币卡牌的 templateId
+    private let goldCardTemplateId = 2000029
+    
     private var filteredCounters: [CounterItem] {
         guard let save = viewModel.saveData else { return [] }
-        var counters = save.counter.map { CounterItem(id: $0.key, value: $0.value) }
+        var counters: [CounterItem] = []
         
-        if let scope = filterScope {
-            counters = counters.filter { counter in
-                CounterScope(fromId: counter.id) == scope
-            }
+        // 金币：从 cards 数组中 id=2000029 的卡牌读取
+        if let goldCard = save.cards.first(where: { $0.templateId == goldCardTemplateId }) {
+            counters.append(CounterItem(id: "gold", value: goldCard.count))
+        }
+        
+        // 金骰子：从 counter 字段读取
+        if let diceCount = save.counter["7100006"] {
+            counters.append(CounterItem(id: "7100006", value: diceCount))
         }
         
         if !searchText.isEmpty {
@@ -34,16 +40,8 @@ struct CounterEditorView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 筛选栏
+            // 搜索栏
             HStack {
-                Picker("作用域", selection: $filterScope) {
-                    Text("全部").tag(nil as CounterScope?)
-                    ForEach(CounterScope.allCases) { scope in
-                        Text(scope.rawValue).tag(scope as CounterScope?)
-                    }
-                }
-                .frame(width: 120)
-                
                 TextField("搜索...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
                 
@@ -56,10 +54,6 @@ struct CounterEditorView: View {
             
             // 计数器表格
             Table(filteredCounters, selection: $editingCounterId) {
-                TableColumn("ID") { counter in
-                    Text(counter.id)
-                }
-                
                 TableColumn("名称") { counter in
                     Text(viewModel.configLoader.getCounterName(id: counter.id))
                 }
@@ -82,7 +76,7 @@ struct CounterEditorView: View {
             if let editId = editingCounterId {
                 Divider()
                 HStack {
-                    Text("计数器 \(editId)")
+                    Text(viewModel.configLoader.getCounterName(id: editId))
                     TextField("值", value: $editingValue, format: .number)
                         .frame(width: 100)
                         .textFieldStyle(.roundedBorder)
@@ -104,7 +98,17 @@ struct CounterEditorView: View {
     
     private func applyCounterValue(id: String, value: Int) {
         guard var save = viewModel.saveData else { return }
-        save.counter[id] = value
+        
+        if id == "gold" {
+            // 修改金币：找到 cards 数组中 id=2000029 的卡牌
+            if let index = save.cards.firstIndex(where: { $0.templateId == goldCardTemplateId }) {
+                save.cards[index].count = value
+            }
+        } else {
+            // 修改其他计数器（金骰子）
+            save.counter[id] = value
+        }
+        
         viewModel.saveData = save
         viewModel.markModified()
     }

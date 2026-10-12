@@ -80,9 +80,20 @@ class ConfigLoader {
         }
     }
 
+    /// 计数器名称映射（硬编码，游戏配置中无此数据）
+    private let counterNames: [String: String] = [
+        "gold": "金币",
+        "7100006": "金骰子"
+    ]
+
+    /// 获取可修改的计数器 ID 列表（有实际修改意义的计数器）
+    func getEditableCounterIds() -> Set<String> {
+        return Set(counterNames.keys)
+    }
+
     /// 获取计数器名称
     func getCounterName(id: String) -> String {
-        return tagTemplates[id]?.name ?? id
+        return counterNames[id] ?? id
     }
 
     /// 卡牌分类
