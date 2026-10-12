@@ -61,7 +61,11 @@ class CardService {
     func updateCharacterAttribute(in save: inout SaveData, characterUid: Int, attribute: AttributeType, value: Int) {
         guard let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
         let clampedValue = max(0, min(999, value))
-        save.cards[index].tag[attribute.rawValue] = clampedValue
+        if clampedValue == 0 {
+            save.cards[index].tag.removeValue(forKey: attribute.rawValue)
+        } else {
+            save.cards[index].tag[attribute.rawValue] = clampedValue
+        }
     }
     
     /// 获取卡牌的分类

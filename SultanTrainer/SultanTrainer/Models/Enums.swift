@@ -20,6 +20,8 @@ enum AttributeType: String, CaseIterable, Identifiable {
     case battle = "battle"
     case social = "social"
     case survival = "survival"
+    case magic = "magic"
+    case knowledge = "knowledge"
     
     var id: String { rawValue }
     
@@ -33,6 +35,8 @@ enum AttributeType: String, CaseIterable, Identifiable {
         case .battle: return "战斗"
         case .social: return "社交"
         case .survival: return "生存"
+        case .magic: return "魔力"
+        case .knowledge: return "学识"
         }
     }
 }
