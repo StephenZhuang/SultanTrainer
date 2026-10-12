@@ -17,19 +17,19 @@ struct CardListView: View {
     
     private var filteredCards: [Card] {
         guard let save = viewModel.saveData else { return [] }
-        var cards = save.cards
-        
+        var cards = save.cards.filter { $0.bag == 0 }
+
         if let category = filterCategory {
             cards = cards.filter { viewModel.cardService.categorize(card: $0) == category }
         }
-        
+
         if !searchText.isEmpty {
             cards = cards.filter {
-                let name = viewModel.configLoader.getCardName(id: $0.templateId)
+                let name = viewModel.configLoader.getCardDisplayName(card: $0, saveName: save.name)
                 return name.localizedCaseInsensitiveContains(searchText) || "\($0.templateId)".contains(searchText) || "\($0.uid)".contains(searchText)
             }
         }
-        
+
         return cards.sorted { $0.uid < $1.uid }
     }
     
@@ -87,7 +87,7 @@ struct CardListView: View {
                 .width(min: 50, ideal: 60)
                 
                 TableColumn("名称") { card in
-                    Text(viewModel.configLoader.getCardName(id: card.templateId))
+                    Text(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name))
                 }
                 
                 TableColumn("类别") { card in
@@ -126,7 +126,7 @@ struct CardListView: View {
         } message: {
             if let uid = selectedCardUid,
                let card = viewModel.saveData?.cards.first(where: { $0.uid == uid }) {
-                let name = viewModel.configLoader.getCardName(id: card.templateId)
+                let name = viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name)
                 Text("确定要删除「\(name)」(UID: \(uid)) 吗？")
             }
         }

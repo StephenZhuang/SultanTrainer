@@ -6,11 +6,13 @@ struct CardTemplate: Codable, Identifiable {
     var id: Int
     var name: String
     var text: String
+    var type: String
+    var title: String
     var tag: [String: Int]
     var equip_slots: [String]
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, text, tag, equip_slots
+        case id, name, text, type, title, tag, equip_slots = "equips"
     }
 
     init(from decoder: Decoder) throws {
@@ -18,14 +20,18 @@ struct CardTemplate: Codable, Identifiable {
         id = try container.decode(Int.self, forKey: .id)
         name = (try? container.decode(String.self, forKey: .name)) ?? ""
         text = (try? container.decode(String.self, forKey: .text)) ?? ""
+        type = (try? container.decode(String.self, forKey: .type)) ?? ""
+        title = (try? container.decode(String.self, forKey: .title)) ?? ""
         tag = (try? container.decode([String: Int].self, forKey: .tag)) ?? [:]
         equip_slots = (try? container.decode([String].self, forKey: .equip_slots)) ?? []
     }
 
-    init(id: Int, name: String = "", text: String = "", tag: [String: Int] = [:], equip_slots: [String] = []) {
+    init(id: Int, name: String = "", text: String = "", type: String = "", title: String = "", tag: [String: Int] = [:], equip_slots: [String] = []) {
         self.id = id
         self.name = name
         self.text = text
+        self.type = type
+        self.title = title
         self.tag = tag
         self.equip_slots = equip_slots
     }

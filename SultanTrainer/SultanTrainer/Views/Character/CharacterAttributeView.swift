@@ -17,7 +17,7 @@ struct CharacterAttributeView: View {
                 Picker("人物", selection: $selectedCharacterUid) {
                     Text("请选择").tag(nil as Int?)
                     ForEach(characters) { card in
-                        Text(viewModel.configLoader.getCardName(id: card.templateId))
+                        Text(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name))
                             .tag(card.uid as Int?)
                     }
                 }

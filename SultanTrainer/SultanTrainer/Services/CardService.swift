@@ -3,6 +3,10 @@ import Foundation
 
 /// 卡牌操作服务
 class CardService {
+    static let zhEquipToEn: [String: String] = [
+        "武器": "weapon", "服装": "cloth", "饰品": "accessory", "驯兽": "animal_handling"
+    ]
+
     let configLoader: ConfigLoader
     
     init(configLoader: ConfigLoader) {
@@ -12,12 +16,12 @@ class CardService {
     /// 添加卡牌到存档
     func addCard(to save: inout SaveData, templateId: Int, count: Int = 1) {
         var card = Card(uid: save.card_uid_index, templateId: templateId, count: count)
-        
+
         if let template = configLoader.cardTemplates[templateId] {
             card.tag = template.tag
-            card.equip_slots = template.equip_slots
+            card.equip_slots = template.equip_slots.map { Self.zhEquipToEn[$0] ?? $0 }
         }
-        
+
         save.cards.append(card)
         save.card_uid_index += 1
     }
@@ -63,7 +67,8 @@ class CardService {
             return configLoader.categorize(template: template)
         }
         if card.templateId >= 2010001 && card.templateId <= 2010016 { return .sudan }
-        if card.templateId >= 2000001 && card.templateId <= 2000010 { return .character }
+        let equipmentSlots = ["weapon", "cloth", "accessory", "animal_handling"]
+        if card.equip_slots.contains(where: { equipmentSlots.contains($0) }) { return .equipment }
         return .other
     }
 }

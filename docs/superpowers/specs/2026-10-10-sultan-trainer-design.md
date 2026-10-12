@@ -119,13 +119,13 @@ struct SaveData: Codable {
 
 ### 3.3 卡牌类别
 
-| 类别 | 说明 | ID范围/判断条件 |
-|------|------|-----------------|
-| 人物 | 主角卡、追随者等 | 2000001-2000010 |
-| 装备 | 武器、服装、饰品、驯兽 | equip_slots包含weapon/cloth/accessory/animal_handling |
-| 书籍 | 书籍类卡牌 | tag包含book |
-| 苏丹卡 | 核心机制卡 | 2010001-2010016 |
-| 其他 | 金币、资源等 | 2000900+或以上都不符合 |
+| 类别 | 说明 | 判断条件 |
+|------|------|----------|
+| 人物 | 主角卡、追随者等 | type == "char" |
+| 装备 | 武器、服装、饰品、驯兽 | equips包含武器/服装/饰品/驯兽 |
+| 书籍 | 书籍类卡牌 | tag包含"读物" |
+| 苏丹卡 | 核心机制卡 | type == "sudan" |
+| 其他 | 金币、资源等 | type == "item"且以上都不符合 |
 
 ### 3.4 存档管理
 - **自动加载**: 启动时扫描 `~/Library/Application Support/com.DoubleCross.SultansGame/SAVEDATA/`，自动找到并加载 `auto_save.json`
@@ -285,10 +285,11 @@ struct GlobalData: Codable {
 struct CardTemplate: Codable {
     var id: Int
     var name: String
+    var type: String        // "char" / "item" / "sudan"
+    var title: String       // 细分类：书籍、武器、服装 等
     var text: String
     var tag: [String: Int]
-    var equip_slots: [String]
-    // 其他字段按需添加
+    var equip_slots: [String]  // JSON字段名为 "equips"，值为中文（武器/服装/饰品）
 }
 
 // 枚举
@@ -525,7 +526,8 @@ class ConfigLoader {
     }
     
     func loadAllConfigs() throws
-    func getCardName(id: Int) -> String  // 返回名称或ID字符串
+    func getCardName(id: Int) -> String  // 返回模板名或ID字符串
+    func getCardDisplayName(card: Card, saveName: String?) -> String  // custom_name > saveName(主角卡) > 模板名
     func getCounterName(id: String) -> String
 }
 ```
@@ -551,21 +553,12 @@ class CardService {
 ### 6.4 卡牌分类逻辑
 ```swift
 func categorize(template: CardTemplate) -> CardCategory {
-    if template.id >= 2010001 && template.id <= 2010016 {
-        return .sudan
-    }
-    if template.id >= 2000001 && template.id <= 2000010 {
-        return .character
-    }
-    if template.equip_slots.contains("weapon") || 
-       template.equip_slots.contains("cloth") || 
-       template.equip_slots.contains("accessory") ||
-       template.equip_slots.contains("animal_handling") {
+    if template.type == "sudan" { return .sudan }
+    if template.type == "char" { return .character }
+    if template.equip_slots.contains(where: { ["武器","服装","饰品","驯兽"].contains($0) }) {
         return .equipment
     }
-    if template.tag.keys.contains("book") {
-        return .book
-    }
+    if template.tag.keys.contains("读物") { return .book }
     return .other
 }
 ```

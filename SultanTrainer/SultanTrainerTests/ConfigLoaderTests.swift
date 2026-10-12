@@ -29,20 +29,20 @@ final class ConfigLoaderTests: XCTestCase {
     
     func testCategorizeCard() {
         let loader = ConfigLoader()
-        
-        let character = CardTemplate(id: 2000001, name: "阿尔图")
+
+        let character = CardTemplate(id: 2000001, name: "阿尔图", type: "char")
         XCTAssertEqual(loader.categorize(template: character), .character)
-        
-        let sudan = CardTemplate(id: 2010001, name: "苏丹卡1")
+
+        let sudan = CardTemplate(id: 2010001, name: "苏丹卡1", type: "sudan")
         XCTAssertEqual(loader.categorize(template: sudan), .sudan)
-        
-        let weapon = CardTemplate(id: 2000045, name: "长剑", equip_slots: ["weapon"])
+
+        let weapon = CardTemplate(id: 2000045, name: "长剑", type: "item", equip_slots: ["武器"])
         XCTAssertEqual(loader.categorize(template: weapon), .equipment)
-        
-        let book = CardTemplate(id: 2000100, name: "古书", tag: ["book": 1])
+
+        let book = CardTemplate(id: 2000100, name: "古书", type: "item", tag: ["读物": 1])
         XCTAssertEqual(loader.categorize(template: book), .book)
-        
-        let other = CardTemplate(id: 2000090, name: "金币")
+
+        let other = CardTemplate(id: 2000090, name: "金币", type: "item")
         XCTAssertEqual(loader.categorize(template: other), .other)
     }
 }

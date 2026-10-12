@@ -46,27 +46,32 @@ class ConfigLoader {
     func getCardName(id: Int) -> String {
         return cardTemplates[id]?.name ?? "\(id)"
     }
-    
+
+    /// 获取卡牌显示名称：custom_name > 存档角色名（主角卡）> 模板名
+    func getCardDisplayName(card: Card, saveName: String? = nil) -> String {
+        if !card.custom_name.isEmpty {
+            return card.custom_name
+        }
+        if card.templateId == 2000001, let saveName = saveName, !saveName.isEmpty {
+            return saveName
+        }
+        return getCardName(id: card.templateId)
+    }
+
     /// 获取计数器名称
     func getCounterName(id: String) -> String {
         return tagTemplates[id]?.name ?? id
     }
-    
+
     /// 卡牌分类
     func categorize(template: CardTemplate) -> CardCategory {
-        if template.id >= 2010001 && template.id <= 2010016 {
-            return .sudan
-        }
-        if template.id >= 2000001 && template.id <= 2000010 {
-            return .character
-        }
-        let equipmentSlots = ["weapon", "cloth", "accessory", "animal_handling"]
-        if template.equip_slots.contains(where: { equipmentSlots.contains($0) }) {
+        if template.type == "sudan" { return .sudan }
+        if template.type == "char" { return .character }
+        let equipmentNames = ["武器", "服装", "饰品", "驯兽"]
+        if template.equip_slots.contains(where: { equipmentNames.contains($0) }) {
             return .equipment
         }
-        if template.tag.keys.contains("book") {
-            return .book
-        }
+        if template.tag.keys.contains("读物") { return .book }
         return .other
     }
     

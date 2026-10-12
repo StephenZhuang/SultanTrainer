@@ -47,7 +47,7 @@ struct RiteEditorView: View {
 
                             if let card = card {
                                 Text("UID: \(card.uid)")
-                                Text("(\(viewModel.configLoader.getCardName(id: card.templateId)))")
+                                Text("(\(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name)))")
                                     .foregroundStyle(.secondary)
                             } else {
                                 Text("空")
