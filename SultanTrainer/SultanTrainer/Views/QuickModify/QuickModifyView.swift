@@ -80,7 +80,7 @@ struct QuickModifyView: View {
     private func maxAttributes() {
         executeAction {
             guard var save = viewModel.saveData else { return }
-            guard let character = save.cards.first(where: { $0.templateId >= 2000001 && $0.templateId <= 2000010 }) else { return }
+            guard let character = save.cards.first(where: { viewModel.cardService.categorize(card: $0) == .character }) else { return }
             viewModel.quickModifiers.maxAllAttributes(in: &save, characterUid: character.uid)
             viewModel.saveData = save
         }

@@ -30,7 +30,7 @@ struct CardListView: View {
             }
         }
 
-        return cards.sorted { $0.uid < $1.uid }
+        return cards.sorted { $0.bagpos < $1.bagpos }
     }
     
     var body: some View {
@@ -81,6 +81,11 @@ struct CardListView: View {
             
             // 卡牌表格
             Table(filteredCards, selection: $selectedCardUid) {
+                TableColumn("位置") { card in
+                    Text("\(card.bagpos)")
+                }
+                .width(min: 40, ideal: 50)
+
                 TableColumn("UID") { card in
                     Text("\(card.uid)")
                 }

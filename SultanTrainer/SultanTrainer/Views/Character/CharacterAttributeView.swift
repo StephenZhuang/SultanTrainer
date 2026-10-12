@@ -6,7 +6,8 @@ struct CharacterAttributeView: View {
     @State private var editingValues: [String: Int] = [:]
     
     private var characters: [Card] {
-        viewModel.saveData?.cards.filter { $0.templateId >= 2000001 && $0.templateId <= 2000010 } ?? []
+        guard let save = viewModel.saveData else { return [] }
+        return save.cards.filter { viewModel.cardService.categorize(card: $0) == .character }
     }
     
     var body: some View {
