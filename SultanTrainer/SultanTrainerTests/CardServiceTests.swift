@@ -25,6 +25,7 @@ final class CardServiceTests: XCTestCase {
         XCTAssertEqual(save.cards[0].templateId, 2000001)
         XCTAssertEqual(save.cards[0].uid, 100)
         XCTAssertEqual(save.card_uid_index, 101)
+        XCTAssertEqual(save.cards[0].tag["adherent"], 1)
     }
     
     func testDeleteCard() {

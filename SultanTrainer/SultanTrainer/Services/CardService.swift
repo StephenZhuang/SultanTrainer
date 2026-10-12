@@ -23,6 +23,9 @@ class CardService {
             if template.type == "item" {
                 card.tag["own"] = 1
             }
+            if template.type == "char" {
+                card.tag["adherent"] = 1
+            }
         }
 
         let maxBagpos = save.cards.filter { $0.bag == 0 }.map { $0.bagpos }.max() ?? 0
