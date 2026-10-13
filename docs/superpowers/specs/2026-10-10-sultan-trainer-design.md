@@ -102,7 +102,7 @@ struct SaveData: Codable {
 | 快捷修改 | 直接胜利 | auto_save.json | sudan_card_pool全部life=0 + success=true |
 | 快捷修改 | 解锁所有结局 | global.json | overID数组添加所有结局ID |
 | 卡牌管理 | 添加/替换/删除 | auto_save.json | cards数组 |
-| 人物属性 | 修改9项属性 | auto_save.json | 人物卡的tag字段 |
+| 人物属性 | 修改9项属性、驯兽槽 | auto_save.json | 人物卡的tag字段、equip_slots字段 |
 | 计数器 | 浏览/修改 | auto_save.json | counter字典（按作用域分组显示） |
 | 仪式 | 编辑槽位 | auto_save.json | rites[].cards |
 | 全局数据 | 升级点数/解锁 | global.json | totalPoint/upgrade/quest |

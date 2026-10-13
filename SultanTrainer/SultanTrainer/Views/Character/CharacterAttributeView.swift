@@ -4,6 +4,7 @@ struct CharacterAttributeView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var selectedCharacterUid: Int?
     @State private var editingValues: [String: Int] = [:]
+    @State private var hasAnimalHandlingSlot: Bool = false
     
     private var characters: [Card] {
         guard let save = viewModel.saveData else { return [] }
@@ -54,6 +55,10 @@ struct CharacterAttributeView: View {
                             }
                         }
                     }
+                    
+                    Divider()
+                    
+                    Toggle("驯兽槽", isOn: $hasAnimalHandlingSlot)
                 }
                 .padding()
                 
@@ -91,6 +96,7 @@ struct CharacterAttributeView: View {
         for attr in AttributeType.allCases {
             editingValues[attr.rawValue] = character.tag[attr.rawValue] ?? 0
         }
+        hasAnimalHandlingSlot = character.equip_slots.contains("animal_handling")
     }
     
     private func applyAttributes(characterUid: Int) {
@@ -102,6 +108,9 @@ struct CharacterAttributeView: View {
                 )
             }
         }
+        viewModel.cardService.setEquipSlot(
+            in: &save, characterUid: characterUid, slot: "animal_handling", enabled: hasAnimalHandlingSlot
+        )
         viewModel.saveData = save
         viewModel.markModified()
     }

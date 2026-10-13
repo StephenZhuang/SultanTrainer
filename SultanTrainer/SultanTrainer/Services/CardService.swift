@@ -74,6 +74,18 @@ class CardService {
         }
     }
     
+    /// 设置人物卡的装备槽位（添加或移除）
+    func setEquipSlot(in save: inout SaveData, characterUid: Int, slot: String, enabled: Bool) {
+        guard let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        if enabled {
+            if !save.cards[index].equip_slots.contains(slot) {
+                save.cards[index].equip_slots.append(slot)
+            }
+        } else {
+            save.cards[index].equip_slots.removeAll { $0 == slot }
+        }
+    }
+
     /// 获取卡牌的分类
     func categorize(card: Card) -> CardCategory {
         if let template = configLoader.cardTemplates[card.templateId] {
