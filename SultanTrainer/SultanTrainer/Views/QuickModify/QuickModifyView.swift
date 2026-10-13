@@ -14,21 +14,21 @@ struct QuickModifyView: View {
             VStack(alignment: .leading, spacing: 24) {
                 GroupBox("当前局 (auto_save.json)") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 12) {
-                        quickButton("金币+999") { addGold() }
-                        quickButton("全属性满") { maxAttributes() }
-                        quickButton("直接胜利") { instantVictory() }
-                        quickButton("回合数+1") { incrementRound() }
-                        quickButton("清空苏丹卡") { clearSudanCards() }
+                        quickButton("金币+999") { viewModel.quickAddGold() }
+                        quickButton("全属性满") { viewModel.quickMaxAttributes() }
+                        quickButton("直接胜利") { viewModel.quickInstantVictory() }
+                        quickButton("回合数+1") { viewModel.quickIncrementRound() }
+                        quickButton("清空苏丹卡") { viewModel.quickClearSudanCards() }
                     }
                     .padding(.vertical, 8)
                 }
 
                 GroupBox("全局数据 (global.json)") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 12) {
-                        quickButton("升级点数+100") { addUpgradePoints() }
-                        quickButton("解锁所有结局") { unlockAllEndings() }
-                        quickButton("解锁所有升级") { unlockAllUpgrades() }
-                        quickButton("完成所有任务") { completeAllQuests() }
+                        quickButton("升级点数+100") { viewModel.quickAddUpgradePoints() }
+                        quickButton("解锁所有结局") { viewModel.quickUnlockAllEndings() }
+                        quickButton("解锁所有升级") { viewModel.quickUnlockAllUpgrades() }
+                        quickButton("完成所有任务") { viewModel.quickCompleteAllQuests() }
                     }
                     .padding(.vertical, 8)
                 }
@@ -39,6 +39,7 @@ struct QuickModifyView: View {
             Button("取消", role: .cancel) {}
             Button("确认") {
                 pendingAction?()
+                triggerCooldown()
             }
         } message: {
             Text(confirmMessage)
@@ -57,93 +58,14 @@ struct QuickModifyView: View {
     }
 
     private func isButtonDisabled() -> Bool {
-        guard let lastTime = lastActionTime else { return false }
-        return Date().timeIntervalSince(lastTime) < 1.0
+        return lastActionTime != nil
     }
 
-    private func executeAction(_ action: () -> Void) {
-        action()
-        viewModel.markModified()
+    private func triggerCooldown() {
         lastActionTime = Date()
-    }
-
-    // MARK: - 当前局操作
-
-    private func addGold() {
-        executeAction {
-            guard var save = viewModel.saveData else { return }
-            viewModel.quickModifiers.addGold(to: &save, amount: 999)
-            viewModel.saveData = save
-        }
-    }
-
-    private func maxAttributes() {
-        executeAction {
-            guard var save = viewModel.saveData else { return }
-            guard let character = save.cards.first(where: { viewModel.cardService.categorize(card: $0) == .character }) else { return }
-            viewModel.quickModifiers.maxAllAttributes(in: &save, characterUid: character.uid)
-            viewModel.saveData = save
-        }
-    }
-
-    private func instantVictory() {
-        executeAction {
-            guard var save = viewModel.saveData else { return }
-            viewModel.quickModifiers.instantVictory(in: &save)
-            viewModel.saveData = save
-        }
-    }
-
-    private func incrementRound() {
-        executeAction {
-            guard var save = viewModel.saveData else { return }
-            viewModel.quickModifiers.incrementRound(in: &save)
-            viewModel.saveData = save
-        }
-    }
-
-    private func clearSudanCards() {
-        executeAction {
-            guard var save = viewModel.saveData else { return }
-            viewModel.quickModifiers.clearSudanCards(in: &save)
-            viewModel.saveData = save
-        }
-    }
-
-    // MARK: - 全局数据操作
-
-    private func addUpgradePoints() {
-        executeAction {
-            guard var global = viewModel.globalData else { return }
-            viewModel.quickModifiers.addUpgradePoints(to: &global, amount: 100)
-            viewModel.globalData = global
-        }
-    }
-
-    private func unlockAllEndings() {
-        executeAction {
-            guard var global = viewModel.globalData else { return }
-            let allIds = Array(viewModel.configLoader.overTemplates.keys)
-            viewModel.quickModifiers.unlockAllEndings(in: &global, allEndingIds: allIds.isEmpty ? [0, 1, 2, 3, 4, 5] : allIds)
-            viewModel.globalData = global
-        }
-    }
-
-    private func unlockAllUpgrades() {
-        executeAction {
-            guard var global = viewModel.globalData else { return }
-            let allIds = Array(viewModel.configLoader.upgradeTemplates.keys)
-            viewModel.quickModifiers.unlockAllUpgrades(in: &global, allUpgradeIds: allIds)
-            viewModel.globalData = global
-        }
-    }
-
-    private func completeAllQuests() {
-        executeAction {
-            guard var global = viewModel.globalData else { return }
-            let allIds = Array(viewModel.configLoader.questTemplates.keys)
-            viewModel.quickModifiers.completeAllQuests(in: &global, allQuestIds: allIds)
-            viewModel.globalData = global
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(GameConstants.actionCooldown))
+            lastActionTime = nil
         }
     }
 }

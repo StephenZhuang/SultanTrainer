@@ -100,4 +100,34 @@ final class SaveDataModelTests: XCTestCase {
         XCTAssertEqual(decoded.success, true)
         XCTAssertEqual(decoded.counter["7000195"], 5)
     }
+
+    func testOverReasonDefaultValue() throws {
+        // 当 over_reason 字段缺失时，应默认为 Int.min
+        let json = """
+        {
+            "configId": 1,
+            "configVersion": 0,
+            "name": "Test",
+            "difficulty": 1,
+            "round": 1,
+            "min_round": 0,
+            "saveTime": "",
+            "card_uid_index": 1,
+            "rite_uid_index": 1,
+            "success": false,
+            "cards": [],
+            "rites": [],
+            "sudan_card_pool": [],
+            "counter": {},
+            "event_status": {},
+            "timing_rounds": {},
+            "gen_cards": {},
+            "gen_tags": {},
+            "ithink_card": null
+        }
+        """.data(using: .utf8)!
+
+        let save = try JSONDecoder().decode(SaveData.self, from: json)
+        XCTAssertEqual(save.over_reason, Int.min)
+    }
 }

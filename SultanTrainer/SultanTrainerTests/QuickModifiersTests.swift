@@ -27,6 +27,27 @@ final class QuickModifiersTests: XCTestCase {
         XCTAssertEqual(save.counter["7000100"], 999)
     }
 
+    func testAddGoldNegativeAmount() {
+        var save = createMinimalSave()
+        save.counter["7000100"] = 500
+
+        modifiers.addGold(to: &save, amount: -200)
+
+        XCTAssertEqual(save.counter["7000100"], 300)
+    }
+
+    func testInstantVictoryEmptyPool() {
+        var save = createMinimalSave()
+        // 苏丹卡池为空
+        save.sudan_card_pool = []
+        save.success = false
+
+        modifiers.instantVictory(in: &save)
+
+        XCTAssertTrue(save.sudan_card_pool.isEmpty)
+        XCTAssertTrue(save.success)
+    }
+
     func testMaxAllAttributes() {
         var save = createMinimalSave()
         save.cards = [

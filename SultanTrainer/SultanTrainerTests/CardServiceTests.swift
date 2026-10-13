@@ -19,8 +19,9 @@ final class CardServiceTests: XCTestCase {
         var save = createMinimalSave()
         save.card_uid_index = 100
         
-        cardService.addCard(to: &save, templateId: 2000001)
+        let newUid = cardService.addCard(to: &save, templateId: 2000001)
         
+        XCTAssertEqual(newUid, 100)
         XCTAssertEqual(save.cards.count, 1)
         XCTAssertEqual(save.cards[0].templateId, 2000001)
         XCTAssertEqual(save.cards[0].uid, 100)
@@ -58,12 +59,51 @@ final class CardServiceTests: XCTestCase {
         save.cards = [Card(uid: 1, templateId: 2000001)]
         save.card_uid_index = 10
         
-        cardService.replaceCard(in: &save, cardUid: 1, newTemplateId: 2000045)
+        let newUid = cardService.replaceCard(in: &save, cardUid: 1, newTemplateId: 2000045)
         
+        XCTAssertEqual(newUid, 10)
         XCTAssertEqual(save.cards.count, 1)
         XCTAssertEqual(save.cards[0].templateId, 2000045)
         XCTAssertEqual(save.cards[0].uid, 10)
         XCTAssertEqual(save.card_uid_index, 11)
+    }
+    
+    func testReplaceCardPreservesBagPos() {
+        var save = createMinimalSave()
+        save.cards = [Card(uid: 5, templateId: 2000001, bag: 0, bagpos: 3)]
+        save.card_uid_index = 10
+        
+        cardService.replaceCard(in: &save, cardUid: 5, newTemplateId: 2000045)
+        
+        XCTAssertEqual(save.cards[0].bag, 0)
+        XCTAssertEqual(save.cards[0].bagpos, 3)
+    }
+    
+    func testReplaceCardUpdatesRiteReferences() {
+        var save = createMinimalSave()
+        let oldCard = Card(uid: 1, templateId: 2000001, bag: 0, bagpos: 1)
+        save.cards = [oldCard]
+        save.rites = [Rite(uid: 1, id: 5001001, cards: [oldCard, nil])]
+        save.card_uid_index = 10
+        
+        let newUid = cardService.replaceCard(in: &save, cardUid: 1, newTemplateId: 2000045)
+        
+        // 仪式中的引用应更新为新卡
+        XCTAssertEqual(save.rites[0].cards[0]?.uid, newUid)
+        XCTAssertEqual(save.rites[0].cards[0]?.templateId, 2000045)
+        XCTAssertNil(save.rites[0].cards[1])
+    }
+    
+    func testReplaceCardInvalidUid() {
+        var save = createMinimalSave()
+        save.cards = [Card(uid: 1, templateId: 2000001)]
+        save.card_uid_index = 10
+        
+        let result = cardService.replaceCard(in: &save, cardUid: 999, newTemplateId: 2000045)
+        
+        XCTAssertNil(result)
+        XCTAssertEqual(save.cards.count, 1)
+        XCTAssertEqual(save.cards[0].templateId, 2000001)
     }
     
     func testIsCardInRite() {
@@ -83,6 +123,45 @@ final class CardServiceTests: XCTestCase {
         
         XCTAssertEqual(save.cards[0].tag["physique"], 10)
         XCTAssertEqual(save.cards[0].tag["charm"], 3)
+    }
+    
+    func testUpdateCharacterAttributeBoundaryValues() {
+        var save = createMinimalSave()
+        save.cards = [Card(uid: 1, templateId: 2000001, tag: [:])]
+        
+        // 测试边界值：0（应移除）
+        cardService.updateCharacterAttribute(in: &save, characterUid: 1, attribute: .physique, value: 0)
+        XCTAssertNil(save.cards[0].tag["physique"])
+        
+        // 测试边界值：999（最大值）
+        cardService.updateCharacterAttribute(in: &save, characterUid: 1, attribute: .charm, value: 999)
+        XCTAssertEqual(save.cards[0].tag["charm"], 999)
+        
+        // 测试边界值：1000（应被限制为999）
+        cardService.updateCharacterAttribute(in: &save, characterUid: 1, attribute: .wisdom, value: 1000)
+        XCTAssertEqual(save.cards[0].tag["wisdom"], 999)
+        
+        // 测试边界值：-1（应被限制为0，即移除）
+        cardService.updateCharacterAttribute(in: &save, characterUid: 1, attribute: .conceal, value: -1)
+        XCTAssertNil(save.cards[0].tag["conceal"])
+    }
+    
+    func testSetEquipSlot() {
+        var save = createMinimalSave()
+        save.cards = [Card(uid: 1, templateId: 2000001, equip_slots: [])]
+        
+        // 添加装备槽
+        cardService.setEquipSlot(in: &save, characterUid: 1, slot: "weapon", enabled: true)
+        XCTAssertTrue(save.cards[0].equip_slots.contains("weapon"))
+        
+        // 重复添加不应产生重复
+        cardService.setEquipSlot(in: &save, characterUid: 1, slot: "weapon", enabled: true)
+        let weaponCount = save.cards[0].equip_slots.filter { $0 == "weapon" }.count
+        XCTAssertEqual(weaponCount, 1)
+        
+        // 移除装备槽
+        cardService.setEquipSlot(in: &save, characterUid: 1, slot: "weapon", enabled: false)
+        XCTAssertFalse(save.cards[0].equip_slots.contains("weapon"))
     }
     
     private func createMinimalSave() -> SaveData {

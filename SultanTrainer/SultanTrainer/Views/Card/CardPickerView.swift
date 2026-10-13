@@ -11,33 +11,33 @@ struct CardPickerView: View {
     @State private var detailTemplateId: Int? = nil
 
     var onSelect: ((Int) -> Void)?
-    
+
     private var filteredTemplates: [CardTemplate] {
-        var templates = Array(viewModel.configLoader.cardTemplates.values)
+        var templates = viewModel.cardTemplatesList
 
         // 苏丹卡只保留 2010001-2010016，排除 2000xxx 的重复卡
         templates = templates.filter {
             guard $0.type == "sudan" else { return true }
-            return $0.id >= 2010001 && $0.id <= 2010016
+            return GameConstants.sudanCardIdRange.contains($0.id)
         }
 
         if let category = selectedCategory {
-            templates = templates.filter { viewModel.configLoader.categorize(template: $0) == category }
+            templates = templates.filter { viewModel.categorizeTemplate($0) == category }
         }
-        
+
         if let rarity = selectedRarity {
             templates = templates.filter { $0.rare == rarity.rawValue }
         }
-        
+
         if !searchText.isEmpty {
             templates = templates.filter {
                 $0.name.localizedCaseInsensitiveContains(searchText) || "\($0.id)".contains(searchText)
             }
         }
-        
+
         return templates.sorted { $0.id < $1.id }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // 筛选栏
@@ -49,7 +49,7 @@ struct CardPickerView: View {
                     }
                 }
                 .frame(width: 120)
-                
+
                 Picker("品级", selection: $selectedRarity) {
                     Text("全部").tag(nil as CardRarity?)
                     ForEach(CardRarity.allCases) { rarity in
@@ -57,14 +57,14 @@ struct CardPickerView: View {
                     }
                 }
                 .frame(width: 120)
-                
+
                 TextField("搜索...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
             }
             .padding()
-            
+
             Divider()
-            
+
             // 卡牌列表
             List(filteredTemplates, selection: $selectedTemplateId) { template in
                 HStack {
@@ -74,7 +74,7 @@ struct CardPickerView: View {
                     Text("\(template.id)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(viewModel.configLoader.categorize(template: template).rawValue)
+                    Text(viewModel.categorizeTemplate(template).rawValue)
                         .font(.caption)
                         .foregroundStyle(.blue)
                 }
@@ -82,9 +82,9 @@ struct CardPickerView: View {
                 .onTapGesture { detailTemplateId = template.id }
                 .tag(template.id as Int?)
             }
-            
+
             Divider()
-            
+
             // 底部按钮
             HStack {
                 Spacer()
@@ -114,10 +114,10 @@ struct CardPickerView: View {
         let value: Int
         var id: Int { value }
     }
-    
+
     private func getTemplateName(template: CardTemplate) -> String {
         let baseName = template.name.isEmpty ? "\(template.id)" : template.name
-        if let level = viewModel.configLoader.getSudanCardLevel(templateId: template.id) {
+        if let level = viewModel.sudanCardLevel(templateId: template.id) {
             return "\(baseName) (\(level))"
         }
         return baseName

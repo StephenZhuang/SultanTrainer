@@ -8,7 +8,7 @@ final class EnumsTests: XCTestCase {
     }
     
     func testAttributeTypeAllCases() {
-        XCTAssertEqual(AttributeType.allCases.count, 7)
+        XCTAssertEqual(AttributeType.allCases.count, 9)
     }
     
     func testAttributeTypeRawValues() {
@@ -25,6 +25,7 @@ final class EnumsTests: XCTestCase {
         XCTAssertEqual(CounterScope(fromId: "7000195"), .session)
         XCTAssertEqual(CounterScope(fromId: "7100001"), .persistent)
         XCTAssertEqual(CounterScope(fromId: "7200131"), .achievement)
+        XCTAssertEqual(CounterScope(fromId: "7210001"), .crossSession)
         XCTAssertEqual(CounterScope(fromId: "7220001"), .completion)
         XCTAssertEqual(CounterScope(fromId: "7230001"), .unlock)
         XCTAssertNil(CounterScope(fromId: "9999999"))

@@ -71,6 +71,10 @@ struct ContentView: View {
         } message: {
             Text("当前未保存的修改将丢失，是否继续？")
         }
+        .sheet(isPresented: $viewModel.showSavePicker) {
+            SavePickerView()
+                .environmentObject(viewModel)
+        }
     }
 
     @ViewBuilder

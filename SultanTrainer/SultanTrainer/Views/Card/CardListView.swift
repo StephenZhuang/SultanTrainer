@@ -12,11 +12,11 @@ struct CardListView: View {
     @State private var showReplaceConfirm = false
     @State private var pendingReplaceTemplateId: Int?
     @State private var detailCard: Card? = nil
-    
+
     enum PickerMode {
         case add, replace
     }
-    
+
     private var filteredCards: [Card] {
         guard let save = viewModel.saveData else { return [] }
         var cards = save.cards.filter { $0.bagpos > 0 }
@@ -26,7 +26,7 @@ struct CardListView: View {
         cards = cards.filter { seen.insert("\($0.bag)_\($0.bagpos)").inserted }
 
         if let category = filterCategory {
-            cards = cards.filter { viewModel.cardService.categorize(card: $0) == category }
+            cards = cards.filter { viewModel.categorizeCard($0) == category }
         }
 
         if let rarity = filterRarity {
@@ -35,7 +35,7 @@ struct CardListView: View {
 
         if !searchText.isEmpty {
             cards = cards.filter {
-                let name = viewModel.configLoader.getCardDisplayName(card: $0, saveName: save.name)
+                let name = viewModel.cardDisplayName(card: $0, saveName: save.name)
                 return name.localizedCaseInsensitiveContains(searchText) || "\($0.templateId)".contains(searchText) || "\($0.uid)".contains(searchText)
             }
         }
@@ -45,7 +45,7 @@ struct CardListView: View {
             return $0.bagpos < $1.bagpos
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // 操作栏
@@ -60,17 +60,17 @@ struct CardListView: View {
                     showPicker = true
                 }
                 .disabled(selectedCardUid == nil)
-                
+
                 Button("删除卡牌") {
                     guard selectedCardUid != nil else { return }
                     showDeleteConfirm = true
                 }
                 .disabled(selectedCardUid == nil)
-                
+
                 Spacer()
             }
             .padding()
-            
+
             // 筛选栏
             HStack {
                 Picker("类别", selection: $filterCategory) {
@@ -80,7 +80,7 @@ struct CardListView: View {
                     }
                 }
                 .frame(width: 120)
-                
+
                 Picker("品级", selection: $filterRarity) {
                     Text("全部").tag(nil as CardRarity?)
                     ForEach(CardRarity.allCases) { rarity in
@@ -88,18 +88,18 @@ struct CardListView: View {
                     }
                 }
                 .frame(width: 120)
-                
+
                 TextField("搜索...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
-                
+
                 Text("共 \(filteredCards.count) 张")
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
-            
+
             Divider()
-            
+
             // 卡牌表格
             Table(filteredCards, selection: $selectedCardUid) {
                 TableColumn("位置") { card in
@@ -115,12 +115,12 @@ struct CardListView: View {
                 .width(min: 50, ideal: 60)
 
                 TableColumn("名称") { card in
-                    Text(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name))
+                    Text(viewModel.cardDisplayName(card: card, saveName: viewModel.saveData?.name))
                         .onTapGesture { detailCard = card }
                 }
 
                 TableColumn("类别") { card in
-                    Text(viewModel.cardService.categorize(card: card).rawValue)
+                    Text(viewModel.categorizeCard(card).rawValue)
                         .onTapGesture { detailCard = card }
                 }
                 .width(min: 50, ideal: 60)
@@ -142,7 +142,7 @@ struct CardListView: View {
             CardPickerView { templateId in
                 switch pickerMode {
                 case .add:
-                    addCard(templateId: templateId)
+                    viewModel.addCard(templateId: templateId)
                 case .replace:
                     pendingReplaceTemplateId = templateId
                     showReplaceConfirm = true
@@ -162,7 +162,7 @@ struct CardListView: View {
         } message: {
             if let uid = selectedCardUid,
                let card = viewModel.saveData?.cards.first(where: { $0.uid == uid }) {
-                let name = viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name)
+                let name = viewModel.cardDisplayName(card: card, saveName: viewModel.saveData?.name)
                 Text("确定要删除「\(name)」(UID: \(uid)) 吗？")
             }
         }
@@ -170,7 +170,7 @@ struct CardListView: View {
             Button("取消", role: .cancel) { pendingReplaceTemplateId = nil }
             Button("替换") {
                 if let uid = selectedCardUid, let templateId = pendingReplaceTemplateId {
-                    replaceCard(uid: uid, templateId: templateId)
+                    viewModel.replaceCard(uid: uid, newTemplateId: templateId)
                 }
                 pendingReplaceTemplateId = nil
             }
@@ -178,29 +178,13 @@ struct CardListView: View {
             Text("确定要替换选中的卡牌吗？")
         }
     }
-    
-    private func addCard(templateId: Int) {
-        guard var save = viewModel.saveData else { return }
-        viewModel.cardService.addCard(to: &save, templateId: templateId)
-        viewModel.saveData = save
-        viewModel.markModified()
-    }
-    
+
     private func deleteSelectedCard() {
-        guard var save = viewModel.saveData, let uid = selectedCardUid else { return }
-        if viewModel.cardService.deleteCard(from: &save, cardUid: uid) {
-            viewModel.saveData = save
-            viewModel.markModified()
+        guard let uid = selectedCardUid else { return }
+        if viewModel.deleteCard(uid: uid) {
             selectedCardUid = nil
         } else {
             viewModel.errorMessage = "该卡牌正在仪式中使用，无法删除"
         }
-    }
-    
-    private func replaceCard(uid: Int, templateId: Int) {
-        guard var save = viewModel.saveData else { return }
-        viewModel.cardService.replaceCard(in: &save, cardUid: uid, newTemplateId: templateId)
-        viewModel.saveData = save
-        viewModel.markModified()
     }
 }

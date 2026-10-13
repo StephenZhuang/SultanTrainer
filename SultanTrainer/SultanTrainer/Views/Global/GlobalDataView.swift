@@ -3,7 +3,7 @@ import SwiftUI
 struct GlobalDataView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var editingTotalPoint: Int = 0
-    
+
     var body: some View {
         ScrollView {
             if let global = viewModel.globalData {
@@ -32,7 +32,7 @@ struct GlobalDataView: View {
                         }
                         .padding(.vertical, 8)
                     }
-                    
+
                     // 已解锁结局
                     GroupBox("已解锁结局 (\(global.overID.count))") {
                         if global.overID.isEmpty {
@@ -40,8 +40,7 @@ struct GlobalDataView: View {
                         } else {
                             FlowLayout(spacing: 8) {
                                 ForEach(global.overID.sorted(), id: \.self) { id in
-                                    let name = viewModel.configLoader.overTemplates[id]?.name ?? "结局\(id)"
-                                    Text(name)
+                                    Text(viewModel.overTemplateName(id: id))
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
                                         .background(.blue.opacity(0.1))
@@ -51,7 +50,7 @@ struct GlobalDataView: View {
                             .padding(.vertical, 8)
                         }
                     }
-                    
+
                     // 升级列表
                     GroupBox("已获取升级 (\(global.upgrade.count))") {
                         if global.upgrade.isEmpty {
@@ -59,15 +58,14 @@ struct GlobalDataView: View {
                         } else {
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], alignment: .leading, spacing: 4) {
                                 ForEach(global.upgrade.sorted(by: { $0.key < $1.key }), id: \.key) { id, level in
-                                    let name = viewModel.configLoader.upgradeTemplates[Int(id) ?? 0]?.name ?? id
-                                    Text("\(name) (Lv.\(level))")
+                                    Text("\(viewModel.upgradeTemplateName(id)) (Lv.\(level))")
                                         .font(.caption)
                                 }
                             }
                             .padding(.vertical, 8)
                         }
                     }
-                    
+
                     // 任务列表
                     GroupBox("任务状态 (\(global.quest.count))") {
                         if global.quest.isEmpty {
@@ -75,7 +73,7 @@ struct GlobalDataView: View {
                         } else {
                             LazyVGrid(columns: [GridItem(.adaptive(minimum: 200))], alignment: .leading, spacing: 4) {
                                 ForEach(global.quest.sorted(by: { $0.key < $1.key }), id: \.key) { id, status in
-                                    let name = viewModel.configLoader.questTemplates[Int(id) ?? 0]?.name ?? id
+                                    let name = viewModel.questTemplateName(id)
                                     HStack {
                                         Text(name)
                                             .font(.caption)
@@ -98,8 +96,7 @@ struct GlobalDataView: View {
                     guard oldValue != newValue,
                           viewModel.globalData?.totalPoint != newValue else { return }
                     Task { @MainActor in
-                        viewModel.globalData?.totalPoint = newValue
-                        viewModel.markModified()
+                        viewModel.updateTotalPoint(newValue)
                     }
                 }
             } else {
@@ -109,7 +106,7 @@ struct GlobalDataView: View {
             }
         }
     }
-    
+
     private func editableIntField(value: Binding<Int>) -> some View {
         HStack {
             TextField("", value: value, format: .number)
@@ -124,19 +121,19 @@ struct GlobalDataView: View {
 /// 简单的流式布局
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
-    
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = arrange(proposal: proposal, subviews: subviews)
         return result.size
     }
-    
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let result = arrange(proposal: proposal, subviews: subviews)
         for (index, position) in result.positions.enumerated() {
             subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
         }
     }
-    
+
     private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (positions: [CGPoint], size: CGSize) {
         let maxWidth = proposal.width ?? .infinity
         var positions: [CGPoint] = []
@@ -144,7 +141,7 @@ struct FlowLayout: Layout {
         var y: CGFloat = 0
         var rowHeight: CGFloat = 0
         var maxX: CGFloat = 0
-        
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x + size.width > maxWidth && x > 0 {
@@ -157,7 +154,7 @@ struct FlowLayout: Layout {
             x += size.width + spacing
             maxX = max(maxX, x)
         }
-        
+
         return (positions, CGSize(width: maxX, height: y + rowHeight))
     }
 }

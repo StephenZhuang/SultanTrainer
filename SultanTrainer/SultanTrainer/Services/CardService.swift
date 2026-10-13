@@ -13,8 +13,9 @@ class CardService {
         self.configLoader = configLoader
     }
     
-    /// 添加卡牌到存档（自动分配到背包下一个空位）
-    func addCard(to save: inout SaveData, templateId: Int, count: Int = 1) {
+    /// 添加卡牌到存档（自动分配到背包下一个空位），返回新卡 UID
+    @discardableResult
+    func addCard(to save: inout SaveData, templateId: Int, count: Int = 1) -> Int {
         var card = Card(uid: save.card_uid_index, templateId: templateId, count: count)
 
         if let template = configLoader.cardTemplates[templateId] {
@@ -31,15 +32,44 @@ class CardService {
         let maxBagpos = save.cards.filter { $0.bag == 0 }.map { $0.bagpos }.max() ?? 0
         card.bagpos = maxBagpos + 1
 
+        let newUid = card.uid
         save.cards.append(card)
         save.card_uid_index += 1
+        return newUid
     }
     
-    /// 替换卡牌（删除旧的，添加新的）
-    func replaceCard(in save: inout SaveData, cardUid: Int, newTemplateId: Int) {
-        guard let index = save.cards.firstIndex(where: { $0.uid == cardUid }) else { return }
+    /// 替换卡牌（删除旧的，添加新的），保留原卡背包位置，更新仪式引用，返回新卡 UID
+    func replaceCard(in save: inout SaveData, cardUid: Int, newTemplateId: Int) -> Int? {
+        guard let index = save.cards.firstIndex(where: { $0.bag == 0 && $0.bagpos > 0 && $0.uid == cardUid })
+                ?? save.cards.firstIndex(where: { $0.uid == cardUid }) else { return nil }
+        let oldBag = save.cards[index].bag
+        let oldBagpos = save.cards[index].bagpos
+        
         save.cards.remove(at: index)
-        addCard(to: &save, templateId: newTemplateId)
+        let newUid = addCard(to: &save, templateId: newTemplateId)
+        
+        // 保留原卡的背包位置
+        if let newIndex = save.cards.firstIndex(where: { $0.uid == newUid }) {
+            save.cards[newIndex].bag = oldBag
+            save.cards[newIndex].bagpos = oldBagpos
+        }
+        
+        // 更新仪式中对原卡的引用
+        var newCard: Card?
+        if let newIndex = save.cards.firstIndex(where: { $0.uid == newUid }) {
+            newCard = save.cards[newIndex]
+        }
+        if let newCard = newCard {
+            for riteIndex in save.rites.indices {
+                for slotIndex in save.rites[riteIndex].cards.indices {
+                    if let card = save.rites[riteIndex].cards[slotIndex], card.uid == cardUid {
+                        save.rites[riteIndex].cards[slotIndex] = newCard
+                    }
+                }
+            }
+        }
+        
+        return newUid
     }
     
     /// 删除卡牌，如果被仪式引用则返回false
@@ -66,7 +96,7 @@ class CardService {
     /// 修改人物属性
     func updateCharacterAttribute(in save: inout SaveData, characterUid: Int, attribute: AttributeType, value: Int) {
         guard let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
-        let clampedValue = max(0, min(999, value))
+        let clampedValue = attribute.clamp(value)
         if clampedValue == 0 {
             save.cards[index].tag.removeValue(forKey: attribute.rawValue)
         } else {
@@ -91,7 +121,7 @@ class CardService {
         if let template = configLoader.cardTemplates[card.templateId] {
             return configLoader.categorize(template: template)
         }
-        if card.templateId >= 2010001 && card.templateId <= 2010016 { return .sudan }
+        if GameConstants.sudanCardIdRange.contains(card.templateId) { return .sudan }
         let equipmentSlots = ["weapon", "cloth", "accessory", "animal_handling"]
         if card.equip_slots.contains(where: { equipmentSlots.contains($0) }) { return .equipment }
         return .other

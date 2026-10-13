@@ -25,9 +25,9 @@ struct CardDetailView: View {
 
     private var displayName: String {
         if let card = card {
-            return viewModel.configLoader.getCardDisplayName(card: card, saveName: saveName)
+            return viewModel.cardDisplayName(card: card, saveName: saveName)
         } else if let template = template {
-            if let level = viewModel.configLoader.getSudanCardLevel(templateId: template.id) {
+            if let level = viewModel.sudanCardLevel(templateId: template.id) {
                 return "\(template.name) (\(level))"
             }
             return template.name.isEmpty ? "\(template.id)" : template.name
@@ -37,7 +37,7 @@ struct CardDetailView: View {
 
     private var category: CardCategory {
         if let template = template {
-            return viewModel.configLoader.categorize(template: template)
+            return viewModel.categorizeTemplate(template)
         }
         return .other
     }
@@ -172,9 +172,9 @@ struct CardDetailView: View {
             let sortedTag = displayTag.sorted { $0.key < $1.key }
             FlowLayout(spacing: 12) {
                 ForEach(sortedTag, id: \.key) { key, value in
-                    let displayName = viewModel.configLoader.getTagDisplayName(code: key)
+                    let tagName = viewModel.configLoader.getTagDisplayName(code: key)
                     HStack(spacing: 4) {
-                        Text("\(displayName):")
+                        Text("\(tagName):")
                             .foregroundStyle(.secondary)
                         Text("\(value)")
                             .fontWeight(.medium)
@@ -200,9 +200,9 @@ struct CardDetailView: View {
                     .fontWeight(.medium)
 
                 ForEach(equips) { equip in
-                    let equipName = viewModel.configLoader.getCardDisplayName(card: equip, saveName: saveName)
+                    let equipName = viewModel.cardDisplayName(card: equip, saveName: saveName)
                     let equipTemplate = viewModel.configLoader.cardTemplates[equip.templateId]
-                    let equipCategory = equipTemplate.map { viewModel.configLoader.categorize(template: $0) }
+                    let equipCategory = equipTemplate.map { viewModel.categorizeTemplate($0) }
 
                     HStack {
                         Circle()

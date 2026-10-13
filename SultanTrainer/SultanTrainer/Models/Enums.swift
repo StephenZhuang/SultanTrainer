@@ -58,6 +58,11 @@ enum AttributeType: String, CaseIterable, Identifiable {
         case .knowledge: return "学识"
         }
     }
+    
+    /// 将值限制在合法范围内 (0-999)
+    func clamp(_ value: Int) -> Int {
+        max(GameConstants.attributeMinValue, min(GameConstants.attributeMaxValue, value))
+    }
 }
 
 /// 计数器作用域
@@ -65,6 +70,7 @@ enum CounterScope: String, CaseIterable, Identifiable {
     case session = "局内状态"
     case persistent = "跨局数据"
     case achievement = "成就"
+    case crossSession = "跨局累计"
     case completion = "完成记录"
     case unlock = "解锁"
     
@@ -77,6 +83,7 @@ enum CounterScope: String, CaseIterable, Identifiable {
         case 7000: self = .session
         case 7100: self = .persistent
         case 7200: self = .achievement
+        case 7210: self = .crossSession
         case 7220: self = .completion
         case 7230: self = .unlock
         default: return nil

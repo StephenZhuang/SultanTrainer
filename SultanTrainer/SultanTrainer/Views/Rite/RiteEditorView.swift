@@ -8,7 +8,7 @@ struct RiteEditorView: View {
     @State private var pendingSlotUid: Int?
 
     private var rites: [Rite] {
-        viewModel.saveData?.rites ?? []
+        viewModel.rites
     }
 
     var body: some View {
@@ -47,7 +47,7 @@ struct RiteEditorView: View {
 
                             if let card = card {
                                 Text("UID: \(card.uid)")
-                                Text("(\(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name)))")
+                                Text("(\(viewModel.cardDisplayName(card: card, saveName: viewModel.saveData?.name)))")
                                     .foregroundStyle(.secondary)
                             } else {
                                 Text("空")
@@ -64,7 +64,9 @@ struct RiteEditorView: View {
 
                             if card != nil {
                                 Button("清空") {
-                                    clearSlot(riteUid: riteUid, slotIndex: index)
+                                    if let riteIndex = rites.firstIndex(where: { $0.uid == riteUid }) {
+                                        viewModel.clearRiteSlot(riteIndex: riteIndex, slotIndex: index)
+                                    }
                                 }
                             }
                         }
@@ -84,40 +86,12 @@ struct RiteEditorView: View {
         }
         .sheet(isPresented: $showCardPicker) {
             CardPickerView { templateId in
-                if let slotIndex = editingSlotIndex, let riteUid = selectedRiteUid {
-                    assignCardToSlot(riteUid: riteUid, slotIndex: slotIndex, templateId: templateId)
+                if let slotIndex = editingSlotIndex,
+                   let riteIndex = rites.firstIndex(where: { $0.uid == selectedRiteUid }) {
+                    viewModel.assignCardToRiteSlot(riteIndex: riteIndex, slotIndex: slotIndex, templateId: templateId)
                 }
             }
             .environmentObject(viewModel)
         }
-    }
-
-    private func clearSlot(riteUid: Int, slotIndex: Int) {
-        guard var save = viewModel.saveData,
-              let riteIndex = save.rites.firstIndex(where: { $0.uid == riteUid }) else { return }
-        guard slotIndex < save.rites[riteIndex].cards.count else { return }
-        save.rites[riteIndex].cards[slotIndex] = nil
-        viewModel.saveData = save
-        viewModel.markModified()
-    }
-
-    private func assignCardToSlot(riteUid: Int, slotIndex: Int, templateId: Int) {
-        guard var save = viewModel.saveData,
-              let riteIndex = save.rites.firstIndex(where: { $0.uid == riteUid }) else { return }
-        guard slotIndex < save.rites[riteIndex].cards.count else { return }
-
-        // 查找或创建对应模板的卡牌
-        if let existingCard = save.cards.first(where: { $0.templateId == templateId }) {
-            save.rites[riteIndex].cards[slotIndex] = existingCard
-        } else {
-            // 添加新卡牌再引用
-            viewModel.cardService.addCard(to: &save, templateId: templateId)
-            if let newCard = save.cards.last {
-                save.rites[riteIndex].cards[slotIndex] = newCard
-            }
-        }
-
-        viewModel.saveData = save
-        viewModel.markModified()
     }
 }

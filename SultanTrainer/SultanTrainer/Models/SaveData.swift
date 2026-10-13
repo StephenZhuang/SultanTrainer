@@ -44,7 +44,7 @@ struct SaveData: Codable {
         card_uid_index = (try? container.decode(Int.self, forKey: .card_uid_index)) ?? 0
         rite_uid_index = (try? container.decode(Int.self, forKey: .rite_uid_index)) ?? 0
         success = (try? container.decode(Bool.self, forKey: .success)) ?? false
-        over_reason = (try? container.decode(Int.self, forKey: .over_reason)) ?? 0
+        over_reason = (try? container.decode(Int.self, forKey: .over_reason)) ?? Int.min
         cards = (try? container.decode([Card].self, forKey: .cards)) ?? []
         rites = (try? container.decode([Rite].self, forKey: .rites)) ?? []
         sudan_card_pool = (try? container.decode([Card].self, forKey: .sudan_card_pool)) ?? []

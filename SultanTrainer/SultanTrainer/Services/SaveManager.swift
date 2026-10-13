@@ -1,7 +1,10 @@
 import Foundation
+import os
 
 /// 存档管理器，负责扫描、加载、备份和保存存档
 class SaveManager {
+    private static let logger = Logger(subsystem: "com.sultantrainer", category: "SaveManager")
+
     static let saveRootDir = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/com.DoubleCross.SultansGame/SAVEDATA")
 
@@ -57,30 +60,72 @@ class SaveManager {
 
     /// 从指定路径加载存档
     func loadSave(from path: URL) throws -> SaveData {
-        let data = try Data(contentsOf: path)
-        let decoder = JSONDecoder()
-        return try decoder.decode(SaveData.self, from: data)
+        do {
+            let data = try Data(contentsOf: path)
+            let decoder = JSONDecoder()
+            return try decoder.decode(SaveData.self, from: data)
+        } catch let error as SaveError {
+            throw error
+        } catch {
+            throw SaveError.parseFailed(path, underlying: error)
+        }
     }
 
     /// 从指定路径加载全局数据
     func loadGlobal(from path: URL) throws -> GlobalData {
-        let data = try Data(contentsOf: path)
-        let decoder = JSONDecoder()
-        return try decoder.decode(GlobalData.self, from: data)
+        do {
+            let data = try Data(contentsOf: path)
+            let decoder = JSONDecoder()
+            return try decoder.decode(GlobalData.self, from: data)
+        } catch let error as SaveError {
+            throw error
+        } catch {
+            throw SaveError.parseFailed(path, underlying: error)
+        }
     }
 
     /// 保存存档（自动备份 + 保留未建模字段 + 原子写入）
     func saveSave(_ save: SaveData, to path: URL) throws {
-        let originalData = try? Data(contentsOf: path)
-        try backupFile(at: path, to: backupDir)
+        let originalData: Data?
+        if FileManager.default.fileExists(atPath: path.path) {
+            do {
+                originalData = try Data(contentsOf: path)
+            } catch {
+                Self.logger.error("读取原始存档数据失败: \(path.path, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+                throw SaveError.writeFailed(path, underlying: error)
+            }
+        } else {
+            originalData = nil
+        }
+        do {
+            try backupFile(at: path, to: backupDir)
+        } catch {
+            Self.logger.error("备份存档失败: \(path.path, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+            throw SaveError.backupFailed(path, underlying: error)
+        }
         try mergeWrite(save, originalData: originalData, to: path)
         currentSavePath = path
     }
 
     /// 保存全局数据（自动备份 + 保留未建模字段 + 原子写入）
     func saveGlobal(_ global: GlobalData, to path: URL) throws {
-        let originalData = try? Data(contentsOf: path)
-        try backupFile(at: path, to: backupDir)
+        let originalData: Data?
+        if FileManager.default.fileExists(atPath: path.path) {
+            do {
+                originalData = try Data(contentsOf: path)
+            } catch {
+                Self.logger.error("读取原始全局数据失败: \(path.path, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+                throw SaveError.writeFailed(path, underlying: error)
+            }
+        } else {
+            originalData = nil
+        }
+        do {
+            try backupFile(at: path, to: backupDir)
+        } catch {
+            Self.logger.error("备份全局数据失败: \(path.path, privacy: .public), error: \(error.localizedDescription, privacy: .public)")
+            throw SaveError.backupFailed(path, underlying: error)
+        }
         try mergeWrite(global, originalData: originalData, to: path)
         currentGlobalPath = path
     }
@@ -93,12 +138,22 @@ class SaveManager {
         }
 
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        formatter.dateFormat = "yyyyMMdd_HHmmss_SSS"
         let timestamp = formatter.string(from: Date())
         let backupName = "\(sourcePath.deletingPathExtension().lastPathComponent)_\(timestamp).json"
         let backupPath = backupDir.appendingPathComponent(backupName)
 
-        try fm.copyItem(at: sourcePath, to: backupPath)
+        do {
+            try fm.copyItem(at: sourcePath, to: backupPath)
+        } catch {
+            // Fallback: if destination already exists, remove and retry
+            if fm.fileExists(atPath: backupPath.path) {
+                try fm.removeItem(at: backupPath)
+                try fm.copyItem(at: sourcePath, to: backupPath)
+            } else {
+                throw SaveError.backupFailed(sourcePath, underlying: error)
+            }
+        }
 
         try cleanupOldBackups(in: backupDir)
     }
@@ -114,9 +169,10 @@ class SaveManager {
 
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
-            try fm.removeItem(at: url)
+            try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
+        } else {
+            try fm.moveItem(at: tempUrl, to: url)
         }
-        try fm.moveItem(at: tempUrl, to: url)
     }
 
     /// 合并写入：编码新值，与原始 JSON 合并（保留未建模字段），原子写入
@@ -141,9 +197,10 @@ class SaveManager {
 
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
-            try fm.removeItem(at: url)
+            try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
+        } else {
+            try fm.moveItem(at: tempUrl, to: url)
         }
-        try fm.moveItem(at: tempUrl, to: url)
     }
 
     // MARK: - Private

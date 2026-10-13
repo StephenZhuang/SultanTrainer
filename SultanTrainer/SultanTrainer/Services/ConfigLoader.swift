@@ -1,8 +1,11 @@
 // Services/ConfigLoader.swift
 import Foundation
+import os
 
 /// 游戏配置加载器，负责定位config目录并加载模板数据
 class ConfigLoader {
+    private static let logger = Logger(subsystem: "com.sultantrainer", category: "ConfigLoader")
+
     var configDirectory: URL?
     var cardTemplates: [Int: CardTemplate] = [:]
     var tagTemplates: [String: TagTemplate] = [:]
@@ -29,17 +32,27 @@ class ConfigLoader {
         return nil
     }
     
-    /// 加载所有配置文件
-    func loadAllConfigs() throws {
+    /// 加载所有配置文件（单个配置失败时记录日志并继续，不中断其他配置加载）
+    func loadAllConfigs() {
         guard let configDir = configDirectory else {
+            Self.logger.warning("配置目录未设置，跳过配置加载（降级模式）")
             return // 降级模式：不加载配置，UI只显示ID
         }
-        
-        try loadCardsConfig(from: configDir)
-        try loadTagConfig(from: configDir)
-        try loadUpgradeConfig(from: configDir)
-        try loadQuestConfig(from: configDir)
-        try loadOverConfig(from: configDir)
+
+        do { try loadCardsConfig(from: configDir) }
+        catch { Self.logger.error("加载卡牌配置失败: \(error.localizedDescription, privacy: .public)") }
+
+        do { try loadTagConfig(from: configDir) }
+        catch { Self.logger.error("加载标签配置失败: \(error.localizedDescription, privacy: .public)") }
+
+        do { try loadUpgradeConfig(from: configDir) }
+        catch { Self.logger.error("加载升级配置失败: \(error.localizedDescription, privacy: .public)") }
+
+        do { try loadQuestConfig(from: configDir) }
+        catch { Self.logger.error("加载任务配置失败: \(error.localizedDescription, privacy: .public)") }
+
+        do { try loadOverConfig(from: configDir) }
+        catch { Self.logger.error("加载结局配置失败: \(error.localizedDescription, privacy: .public)") }
     }
     
     /// 获取卡牌名称，找不到时返回ID字符串
@@ -244,7 +257,7 @@ class ConfigLoader {
                 }
             }
         } catch {
-            // Spotlight搜索失败，降级处理
+            Self.logger.warning("Spotlight搜索配置文件失败: \(error.localizedDescription, privacy: .public)")
         }
         return nil
     }
@@ -261,6 +274,9 @@ class ConfigLoader {
             for template in array {
                 cardTemplates[template.id] = template
             }
+        } else {
+            Self.logger.error("卡牌配置解码失败: 无法解析为字典或数组格式")
+            throw ConfigError.loadFailed("cards.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
         }
     }
     
@@ -276,6 +292,9 @@ class ConfigLoader {
             for template in array {
                 tagTemplates[template.code] = template
             }
+        } else {
+            Self.logger.error("标签配置解码失败: 无法解析为字典或数组格式")
+            throw ConfigError.loadFailed("tag.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
         }
     }
     
@@ -291,6 +310,9 @@ class ConfigLoader {
             for template in array {
                 upgradeTemplates[template.id] = template
             }
+        } else {
+            Self.logger.error("升级配置解码失败: 无法解析为字典或数组格式")
+            throw ConfigError.loadFailed("upgrade.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
         }
     }
     
@@ -306,6 +328,9 @@ class ConfigLoader {
             for template in array {
                 questTemplates[template.id] = template
             }
+        } else {
+            Self.logger.error("任务配置解码失败: 无法解析为字典或数组格式")
+            throw ConfigError.loadFailed("quest.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
         }
     }
     
@@ -319,6 +344,9 @@ class ConfigLoader {
                     overTemplates[id] = template
                 }
             }
+        } else {
+            Self.logger.error("结局配置解码失败: 无法解析为字典格式")
+            throw ConfigError.loadFailed("over.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
         }
     }
 }

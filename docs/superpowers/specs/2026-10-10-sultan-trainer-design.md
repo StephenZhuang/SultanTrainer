@@ -147,21 +147,17 @@ SultanTrainer/
 │   ├── GlobalData.swift       # global.json
 │   ├── Card.swift             # 卡牌实例
 │   ├── Rite.swift             # 仪式
-│   ├── CardTemplate.swift     # 卡牌模板（cards.json）
-│   ├── TagTemplate.swift      # 标签定义（tag.json）
-│   ├── UpgradeTemplate.swift  # 升级定义（upgrade.json）
-│   ├── QuestTemplate.swift    # 任务定义（quest.json）
-│   ├── OverTemplate.swift     # 结局定义（over.json）
+│   ├── CardTemplate.swift     # 卡牌模板 + 标签/升级/任务/结局模板（合并）
 │   └── Enums.swift            # 枚举定义
 ├── Services/                  # 业务逻辑
 │   ├── SaveManager.swift      # 存档读写、备份
 │   ├── ConfigLoader.swift     # 游戏配置加载
 │   ├── CardService.swift      # 卡牌操作
-│   └── QuickModifiers.swift   # 快捷修改
+│   ├── QuickModifiers.swift   # 快捷修改
+│   ├── SaveError.swift        # 存档错误类型
+│   └── ConfigError.swift      # 配置错误类型
 ├── ViewModels/                # 视图模型
-│   ├── SaveDataViewModel.swift
-│   ├── CardListViewModel.swift
-│   └── ...
+│   └── AppViewModel.swift     # 单一全局 ViewModel
 ├── Views/
 │   ├── ContentView.swift              # 主窗口
 │   ├── QuickModify/
@@ -169,19 +165,15 @@ SultanTrainer/
 │   ├── Card/
 │   │   ├── CardListView.swift
 │   │   ├── CardDetailView.swift       # 卡牌详情弹窗
-│   │   ├── CardAddView.swift
-│   │   ├── CardReplaceView.swift
-│   │   └── CardDeleteView.swift
+│   │   └── CardPickerView.swift       # 通用卡牌选择器
 │   ├── Character/
 │   │   └── CharacterAttributeView.swift
 │   ├── Counter/
 │   │   └── CounterEditorView.swift
 │   ├── Rite/
 │   │   └── RiteEditorView.swift
-│   ├── Global/
-│   │   └── GlobalDataView.swift
-│   └── Components/
-│       └── CardPickerView.swift       # 通用卡牌选择器
+│   └── Global/
+│       └── GlobalDataView.swift
 └── SultanTrainerApp.swift
 ```
 
@@ -232,11 +224,7 @@ struct Card: Codable, Identifiable {
 struct Rite: Codable, Identifiable {
     var uid: Int
     var id: Int           // 仪式模板ID
-    var cards: [String: CardReference?]  // s1-s7槽位
-    
-    struct CardReference: Codable {
-        var uid: Int
-    }
+    var cards: [Card?]    // 槽位数组，索引对应槽位（cards[0] = s1）
 }
 
 // TimingRound
@@ -303,15 +291,15 @@ enum CardCategory: String, CaseIterable {
 }
 
 enum AttributeType: String, CaseIterable {
-    case physique = "体魄"
-    case charm = "魅力"
-    case wisdom = "智慧"
-    case conceal = "隐匿"
-    case battle = "战斗"
-    case social = "社交"
-    case survival = "生存"
-    case magic = "魔力"
-    case knowledge = "学识"
+    case physique = "physique"
+    case charm = "charm"
+    case wisdom = "wisdom"
+    case conceal = "conceal"
+    case battle = "battle"
+    case social = "social"
+    case survival = "survival"
+    case magic = "magic"
+    case knowledge = "knowledge"
 }
 
 enum CounterScope: String, CaseIterable {
@@ -323,7 +311,39 @@ enum CounterScope: String, CaseIterable {
 }
 ```
 
-### 4.3 数据加载流程
+### 4.3 ViewModel 结构
+
+本项目采用单一全局 ViewModel（`AppViewModel`），所有视图共享同一实例：
+
+```swift
+class AppViewModel: ObservableObject {
+    // 服务层
+    let configLoader = ConfigLoader()
+    private let saveManager = SaveManager()
+    let cardService: CardService
+    private let quickModifiers = QuickModifiers()
+    
+    // 数据
+    @Published var saveData: SaveData?
+    @Published var globalData: GlobalData?
+    
+    // 状态
+    @Published var isLoading = true
+    @Published var hasUnsavedChanges = false
+    @Published var lastSaveMessage: String?
+    @Published var errorMessage: String?
+    
+    // 导航
+    @Published var selectedSidebarItem: SidebarItem?
+}
+```
+
+**关键原则**:
+- View 不直接操作 Model，通过 ViewModel 代理方法
+- ViewModel 持有 SaveData 引用，修改操作更新内存中的 Model
+- 用户手动点击"保存"才写入文件
+
+### 4.4 数据加载流程
 1. **启动时**: ConfigLoader按已知路径 → Spotlight扫描 定位游戏config目录 → 加载模板字典
 2. **启动时**: SaveManager扫描存档根目录 → 找到SteamID子目录 → 加载 `auto_save.json` + `global.json`
 3. **修改操作**: ViewModel调用Service → 更新内存中的Model
@@ -543,39 +563,45 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 ## 六、核心服务设计
 
 ### 6.1 SaveManager
+
 ```swift
 class SaveManager {
     static let saveRootDir = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/com.DoubleCross.SultansGame/SAVEDATA")
     
     var currentSavePath: URL?
-    var backupDir: URL
+    var currentGlobalPath: URL?
+    let backupDir: URL
+    let maxBackups = 10
     
-    // 自动扫描存档目录，返回找到的存档列表
-    func scanSaveDirectories() -> [(steamId: String, autoSavePath: URL, globalPath: URL, modifiedDate: Date)] {
-        // 遍历 saveRootDir 下的子目录
-        // 每个子目录名即SteamID
-        // 检查是否存在 auto_save.json
-        // 返回所有有效存档的信息
+    struct SaveInfo {
+        let steamId: String
+        let autoSavePath: URL
+        let globalPath: URL
+        let modifiedDate: Date
     }
     
-    // 自动加载（单存档直接加载，多存档返回列表）
-    func autoLoad() throws -> SaveData
+    // 扫描存档目录，返回找到的存档列表
+    func scanSaveDirectories() -> [SaveInfo]
     
+    // 从指定路径加载存档
     func loadSave(from path: URL) throws -> SaveData
     func loadGlobal(from path: URL) throws -> GlobalData
-    func saveSave(_ save: SaveData) throws  // 自动备份 + 原子写入
-    func backupCurrentSave() throws
-    func restoreBackup(_ backupPath: URL) throws
     
-    // 原子写入实现
-    private func atomicWrite(_ data: Data, to url: URL) throws {
-        let tempUrl = url.appendingPathExtension("tmp")
-        try data.write(to: tempUrl, options: .atomic)
-        try FileManager.default.moveItem(at: tempUrl, to: url)
-    }
+    // 保存存档（自动备份 + 合并写入 + 原子操作）
+    func saveSave(_ save: SaveData, to path: URL) throws
+    func saveGlobal(_ global: GlobalData, to path: URL) throws
+    
+    // 备份文件
+    func backupFile(at sourcePath: URL, to backupDir: URL) throws
 }
 ```
+
+**关键特性**:
+- `scanSaveDirectories()` 遍历 SAVEDATA 下的 SteamID 子目录
+- `loadSave/loadGlobal` 使用 Codable 解析，失败时抛出 `SaveError`
+- `saveSave/saveGlobal` 自动备份 + 与原始 JSON 合并（保留未建模字段）+ 原子写入
+- 备份保留最近 10 个，自动清理旧备份
 
 ### 6.2 ConfigLoader
 ```swift

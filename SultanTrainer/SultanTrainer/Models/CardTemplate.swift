@@ -11,9 +11,11 @@ struct CardTemplate: Codable, Identifiable {
     var tag: [String: Int]
     var equip_slots: [String]
     var rare: Int
+    var is_only: Bool
+    var resource: String?
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, text, type, title, tag, equip_slots = "equips", rare
+        case id, name, text, type, title, tag, equip_slots = "equips", rare, is_only, resource
     }
 
     init(from decoder: Decoder) throws {
@@ -26,9 +28,18 @@ struct CardTemplate: Codable, Identifiable {
         tag = (try? container.decode([String: Int].self, forKey: .tag)) ?? [:]
         equip_slots = (try? container.decode([String].self, forKey: .equip_slots)) ?? []
         rare = (try? container.decode(Int.self, forKey: .rare)) ?? 0
+        // is_only: 兼容 int→bool
+        if let b = try? container.decode(Bool.self, forKey: .is_only) {
+            is_only = b
+        } else if let i = try? container.decode(Int.self, forKey: .is_only) {
+            is_only = i != 0
+        } else {
+            is_only = false
+        }
+        resource = try? container.decode(String.self, forKey: .resource)
     }
 
-    init(id: Int, name: String = "", text: String = "", type: String = "", title: String = "", tag: [String: Int] = [:], equip_slots: [String] = [], rare: Int = 0) {
+    init(id: Int, name: String = "", text: String = "", type: String = "", title: String = "", tag: [String: Int] = [:], equip_slots: [String] = [], rare: Int = 0, is_only: Bool = false, resource: String? = nil) {
         self.id = id
         self.name = name
         self.text = text
@@ -37,6 +48,8 @@ struct CardTemplate: Codable, Identifiable {
         self.tag = tag
         self.equip_slots = equip_slots
         self.rare = rare
+        self.is_only = is_only
+        self.resource = resource
     }
 }
 
@@ -50,9 +63,16 @@ struct TagTemplate: Codable {
     var can_inherit: Bool
     var can_add: Bool
     var type: String
+    var can_nagiative_and_zero: Bool
+    var text: String?
+    var tips: String?
+    var fail_tag: String?
+    var tag_vanishing: Int?
+    var attributes: [String: Int]?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, code, tag_rank, can_visible, can_inherit, can_add, type
+        case can_nagiative_and_zero, text, tips, fail_tag, tag_vanishing, attributes
     }
 
     init(from decoder: Decoder) throws {
@@ -65,6 +85,12 @@ struct TagTemplate: Codable {
         can_inherit = Self.decodeBool(container, forKey: .can_inherit)
         can_add = Self.decodeBool(container, forKey: .can_add)
         type = (try? container.decode(String.self, forKey: .type)) ?? ""
+        can_nagiative_and_zero = Self.decodeBool(container, forKey: .can_nagiative_and_zero)
+        text = try? container.decode(String.self, forKey: .text)
+        tips = try? container.decode(String.self, forKey: .tips)
+        fail_tag = try? container.decode(String.self, forKey: .fail_tag)
+        tag_vanishing = try? container.decode(Int.self, forKey: .tag_vanishing)
+        attributes = try? container.decode([String: Int].self, forKey: .attributes)
     }
 
     private static func decodeBool(_ container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) -> Bool {

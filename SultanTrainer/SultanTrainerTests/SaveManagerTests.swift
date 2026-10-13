@@ -87,6 +87,37 @@ final class SaveManagerTests: XCTestCase {
         XCTAssertTrue(backups[0].lastPathComponent.hasPrefix("auto_save_"))
     }
 
+    func testMergeWritePreservesUnmodeledFields() throws {
+        // JSON with extra fields not modeled in SaveData (e.g. sudan_box_show, ui_state)
+        let json = """
+        {
+            "configId": 1, "configVersion": 0, "name": "Test",
+            "difficulty": 1, "round": 1, "min_round": 0,
+            "saveTime": "", "card_uid_index": 1, "rite_uid_index": 1,
+            "success": false, "over_reason": 0,
+            "cards": [], "rites": [], "sudan_card_pool": [],
+            "counter": {}, "event_status": {}, "timing_rounds": {},
+            "gen_cards": {}, "gen_tags": {}, "ithink_card": null,
+            "sudan_box_show": [1, 2, 3],
+            "ui_state": {"tab": "character"},
+            "custom_flag": true
+        }
+        """
+        let fileUrl = tempDir.appendingPathComponent("auto_save.json")
+        try json.write(to: fileUrl, atomically: true, encoding: .utf8)
+
+        let save = try saveManager.loadSave(from: fileUrl)
+        try saveManager.saveSave(save, to: fileUrl)
+
+        // Read the saved file as raw JSON and verify unmodeled fields survived
+        let savedData = try Data(contentsOf: fileUrl)
+        let savedJson = try JSONSerialization.jsonObject(with: savedData) as? [String: Any]
+        XCTAssertNotNil(savedJson?["sudan_box_show"], "sudan_box_show should be preserved")
+        XCTAssertNotNil(savedJson?["ui_state"], "ui_state should be preserved")
+        XCTAssertNotNil(savedJson?["custom_flag"], "custom_flag should be preserved")
+        XCTAssertEqual(savedJson?["custom_flag"] as? Bool, true)
+    }
+
     private func createMinimalSaveData() -> SaveData {
         let json = """
         {

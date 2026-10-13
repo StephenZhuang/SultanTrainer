@@ -4,8 +4,9 @@ import Foundation
 class QuickModifiers {
 
     /// 金币+amount（修改counter中金币计数器）
+    /// - Note: 金币计数器 key "7000100" 来源待验证，需从实际存档确认是否为正确值
     func addGold(to save: inout SaveData, amount: Int) {
-        let goldKey = "7000100"
+        let goldKey = "7000100" // TODO: 需从实际存档验证此 key 是否正确
         let current = save.counter[goldKey] ?? 0
         save.counter[goldKey] = current + amount
     }
@@ -14,7 +15,7 @@ class QuickModifiers {
     func maxAllAttributes(in save: inout SaveData, characterUid: Int) {
         guard let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
         for attr in AttributeType.allCases {
-            save.cards[index].tag[attr.rawValue] = 999
+            save.cards[index].tag[attr.rawValue] = GameConstants.attributeMaxValue
         }
     }
 
