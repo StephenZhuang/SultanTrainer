@@ -69,17 +69,19 @@ class SaveManager {
         return try decoder.decode(GlobalData.self, from: data)
     }
 
-    /// 保存存档（自动备份 + 原子写入）
+    /// 保存存档（自动备份 + 保留未建模字段 + 原子写入）
     func saveSave(_ save: SaveData, to path: URL) throws {
+        let originalData = try? Data(contentsOf: path)
         try backupFile(at: path, to: backupDir)
-        try atomicWrite(save, to: path)
+        try mergeWrite(save, originalData: originalData, to: path)
         currentSavePath = path
     }
 
-    /// 保存全局数据（自动备份 + 原子写入）
+    /// 保存全局数据（自动备份 + 保留未建模字段 + 原子写入）
     func saveGlobal(_ global: GlobalData, to path: URL) throws {
+        let originalData = try? Data(contentsOf: path)
         try backupFile(at: path, to: backupDir)
-        try atomicWrite(global, to: path)
+        try mergeWrite(global, originalData: originalData, to: path)
         currentGlobalPath = path
     }
 
@@ -109,6 +111,33 @@ class SaveManager {
 
         let tempUrl = url.appendingPathExtension("tmp")
         try data.write(to: tempUrl, options: .atomic)
+
+        let fm = FileManager.default
+        if fm.fileExists(atPath: url.path) {
+            try fm.removeItem(at: url)
+        }
+        try fm.moveItem(at: tempUrl, to: url)
+    }
+
+    /// 合并写入：编码新值，与原始 JSON 合并（保留未建模字段），原子写入
+    private func mergeWrite<T: Encodable>(_ value: T, originalData: Data?, to url: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
+        let encodedData = try encoder.encode(value)
+
+        var mergedData = encodedData
+        if let originalData = originalData,
+           let original = try? JSONSerialization.jsonObject(with: originalData) as? [String: Any],
+           let encoded = try? JSONSerialization.jsonObject(with: encodedData) as? [String: Any] {
+            var merged = original
+            for (key, val) in encoded {
+                merged[key] = val
+            }
+            mergedData = try JSONSerialization.data(withJSONObject: merged, options: [.prettyPrinted, .withoutEscapingSlashes])
+        }
+
+        let tempUrl = url.appendingPathExtension("tmp")
+        try mergedData.write(to: tempUrl, options: .atomic)
 
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
