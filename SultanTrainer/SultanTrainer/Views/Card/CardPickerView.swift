@@ -3,12 +3,13 @@ import SwiftUI
 struct CardPickerView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @Environment(\.dismiss) var dismiss
-    
+
     @State private var selectedCategory: CardCategory? = nil
     @State private var selectedRarity: CardRarity? = nil
     @State private var searchText = ""
     @State private var selectedTemplateId: Int?
-    
+    @State private var detailTemplateId: Int? = nil
+
     var onSelect: ((Int) -> Void)?
     
     private var filteredTemplates: [CardTemplate] {
@@ -77,6 +78,8 @@ struct CardPickerView: View {
                         .font(.caption)
                         .foregroundStyle(.blue)
                 }
+                .contentShape(Rectangle())
+                .onTapGesture { detailTemplateId = template.id }
                 .tag(template.id as Int?)
             }
             
@@ -98,6 +101,18 @@ struct CardPickerView: View {
             .padding()
         }
         .frame(minWidth: 500, minHeight: 400)
+        .sheet(item: Binding(
+            get: { detailTemplateId.map { IdentifiableInt(value: $0) } },
+            set: { detailTemplateId = $0?.value }
+        )) { item in
+            CardDetailView(card: nil, templateId: item.value, saveName: nil)
+                .environmentObject(viewModel)
+        }
+    }
+
+    private struct IdentifiableInt: Identifiable {
+        let value: Int
+        var id: Int { value }
     }
     
     private func getTemplateName(template: CardTemplate) -> String {

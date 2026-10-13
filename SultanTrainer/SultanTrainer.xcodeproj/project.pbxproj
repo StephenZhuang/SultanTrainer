@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		77A18F22307A2B62005EC717 /* SultanTrainer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SultanTrainer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77A18F22307A2B62005EC717 /* SultanTrainer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SultanTrainer.app; path = "苏丹修改器.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		77A18F2F307A2B63005EC717 /* SultanTrainerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SultanTrainerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		77A18F39307A2B63005EC717 /* SultanTrainerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SultanTrainerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */

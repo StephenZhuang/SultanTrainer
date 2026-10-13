@@ -114,6 +114,20 @@ class ConfigLoader {
         return result
     }
 
+    /// 英文code→中文名映射（用于详情弹窗显示属性标签）
+    var enTagToZh: [String: String] {
+        var result: [String: String] = [:]
+        for (_, template) in tagTemplates {
+            result[template.code] = template.name
+        }
+        return result
+    }
+
+    /// 获取标签的中文显示名（英文code转中文，找不到则返回原值）
+    func getTagDisplayName(code: String) -> String {
+        return enTagToZh[code] ?? code
+    }
+
     /// 转换卡牌 tag 的 key：可修改属性用英文 id，其他保持中文
     func convertTagKeys(_ tag: [String: Int]) -> [String: Int] {
         let mapping = zhTagToEn

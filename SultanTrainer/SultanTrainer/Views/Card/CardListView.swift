@@ -11,6 +11,7 @@ struct CardListView: View {
     @State private var showDeleteConfirm = false
     @State private var showReplaceConfirm = false
     @State private var pendingReplaceTemplateId: Int?
+    @State private var detailCard: Card? = nil
     
     enum PickerMode {
         case add, replace
@@ -103,30 +104,36 @@ struct CardListView: View {
             Table(filteredCards, selection: $selectedCardUid) {
                 TableColumn("位置") { card in
                     Text("\(card.bagpos)")
+                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
 
                 TableColumn("UID") { card in
                     Text("\(card.uid)")
+                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 50, ideal: 60)
-                
+
                 TableColumn("名称") { card in
                     Text(viewModel.configLoader.getCardDisplayName(card: card, saveName: viewModel.saveData?.name))
+                        .onTapGesture { detailCard = card }
                 }
-                
+
                 TableColumn("类别") { card in
                     Text(viewModel.cardService.categorize(card: card).rawValue)
+                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 50, ideal: 60)
-                
+
                 TableColumn("数量") { card in
                     Text("\(card.count)")
+                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
-                
+
                 TableColumn("生命") { card in
                     Text("\(card.life)")
+                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
             }
@@ -142,6 +149,10 @@ struct CardListView: View {
                 }
             }
             .environmentObject(viewModel)
+        }
+        .sheet(item: $detailCard) { card in
+            CardDetailView(card: card, templateId: nil, saveName: viewModel.saveData?.name)
+                .environmentObject(viewModel)
         }
         .alert("确认删除", isPresented: $showDeleteConfirm) {
             Button("取消", role: .cancel) {}
