@@ -55,7 +55,16 @@ struct CharacterAttributeView: View {
 
                     Divider()
 
-                    Toggle("驯兽槽", isOn: $hasAnimalHandlingSlot)
+                    HStack {
+                        Toggle("驯兽槽", isOn: $hasAnimalHandlingSlot)
+
+                        Spacer()
+
+                        Button("医治受伤") {
+                            viewModel.removeHurtTag(characterUid: uid)
+                        }
+                        .disabled(!character.equips.contains { $0.templateId == 2000098 })
+                    }
                 }
                 .padding()
 

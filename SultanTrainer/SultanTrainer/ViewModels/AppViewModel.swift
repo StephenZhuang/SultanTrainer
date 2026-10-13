@@ -304,6 +304,15 @@ class AppViewModel: ObservableObject {
         markModified()
     }
 
+    func removeHurtTag(characterUid: Int) {
+        guard var save = saveData,
+              let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        let hurtCardId = 2000098
+        save.cards[index].equips.removeAll { $0.templateId == hurtCardId }
+        saveData = save
+        markModified()
+    }
+
     // MARK: - 仪式代理
 
     func assignCardToRiteSlot(riteIndex: Int, slotIndex: Int, templateId: Int) {
