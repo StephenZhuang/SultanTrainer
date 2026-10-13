@@ -237,6 +237,24 @@ UI状态字段（`sudan_box_show`, `story_unshow`, `prestige_unshow`, `deadline_
 | `tag_rank` | 排序优先级 |
 | `type` | 类型（`buff`等） |
 
+### 未建模字段的保留策略
+
+存档中的卡牌 `tag` 字典可能包含超出已知9项属性的其他字段，例如：
+
+- **系统标记**: `own`(拥有标记), `adherent`(追随者标记)
+- **生命周期**: `sudan_card_init_life`(初始生命), `card_vanishing`(消失标记)
+- **自定义字段**: 游戏未来版本可能添加的新字段
+
+**保存策略**: 采用"深度合并透传"机制：
+
+1. 读取存档时保存原始 JSON
+2. 修改时只更新已知的属性键（如 `physique`, `charm` 等）
+3. 保存时将修改后的模型编码为 JSON，与原始 JSON 深度合并
+4. 对于卡牌数组（`cards`, `sudan_card_pool`），按 `uid` 匹配并合并每个卡牌的 `tag` 字典
+5. 原子写入合并后的结果
+
+这样确保即使工具未建模某些字段，它们也能在 round-trip（读→改→写）过程中完整保留。
+
 ---
 
 ## 五、计数器系统 (`counter`)

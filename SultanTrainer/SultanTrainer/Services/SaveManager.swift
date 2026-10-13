@@ -175,7 +175,7 @@ class SaveManager {
         }
     }
 
-    /// 合并写入：编码新值，与原始 JSON 合并（保留未建模字段），原子写入
+    /// 合并写入：编码新值，与原始 JSON 深度合并（保留未建模字段和卡牌 tag 中的未知键），原子写入
     private func mergeWrite<T: Encodable>(_ value: T, originalData: Data?, to url: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
@@ -185,10 +185,7 @@ class SaveManager {
         if let originalData = originalData,
            let original = try? JSONSerialization.jsonObject(with: originalData) as? [String: Any],
            let encoded = try? JSONSerialization.jsonObject(with: encodedData) as? [String: Any] {
-            var merged = original
-            for (key, val) in encoded {
-                merged[key] = val
-            }
+            let merged = deepMerge(original: original, updated: encoded)
             mergedData = try JSONSerialization.data(withJSONObject: merged, options: [.prettyPrinted, .withoutEscapingSlashes])
         }
 
@@ -201,6 +198,86 @@ class SaveManager {
         } else {
             try fm.moveItem(at: tempUrl, to: url)
         }
+    }
+
+    /// 深度合并两个 JSON 对象，特别处理卡牌数组中的 tag 字典
+    private func deepMerge(original: [String: Any], updated: [String: Any]) -> [String: Any] {
+        var result = original
+
+        for (key, newValue) in updated {
+            // 特殊处理卡牌数组：cards, sudan_card_pool
+            if (key == "cards" || key == "sudan_card_pool"),
+               let originalArray = original[key] as? [[String: Any]],
+               let updatedArray = newValue as? [[String: Any]] {
+                result[key] = mergeCardArrays(original: originalArray, updated: updatedArray)
+            } else if let originalDict = original[key] as? [String: Any],
+                      let updatedDict = newValue as? [String: Any] {
+                // 递归合并嵌套字典
+                result[key] = deepMerge(original: originalDict, updated: updatedDict)
+            } else {
+                // 直接覆盖
+                result[key] = newValue
+            }
+        }
+
+        return result
+    }
+
+    /// 合并卡牌数组，按 uid 匹配并深度合并每个卡牌的 tag 字典
+    private func mergeCardArrays(original: [[String: Any]], updated: [[String: Any]]) -> [[String: Any]] {
+        // 构建原始卡牌的 uid -> 原始数据映射
+        var originalByUid: [Int: [String: Any]] = [:]
+        for card in original {
+            if let uid = card["uid"] as? Int {
+                originalByUid[uid] = card
+            }
+        }
+
+        var result: [[String: Any]] = []
+        for updatedCard in updated {
+            guard let uid = updatedCard["uid"] as? Int else {
+                // 没有 uid 的卡牌直接添加
+                result.append(updatedCard)
+                continue
+            }
+
+            if let originalCard = originalByUid[uid] {
+                // 找到匹配的原始卡牌，深度合并
+                result.append(mergeCard(original: originalCard, updated: updatedCard))
+            } else {
+                // 新增卡牌，直接使用更新后的数据
+                result.append(updatedCard)
+            }
+        }
+
+        return result
+    }
+
+    /// 合并单个卡牌数据，特别处理 tag 字典
+    private func mergeCard(original: [String: Any], updated: [String: Any]) -> [String: Any] {
+        var result = original
+
+        for (key, newValue) in updated {
+            if key == "tag",
+               let originalTag = original["tag"] as? [String: Int],
+               let updatedTag = newValue as? [String: Int] {
+                // 深度合并 tag 字典：保留原始的所有键，用新值覆盖已知键
+                var mergedTag = originalTag
+                for (tagKey, tagValue) in updatedTag {
+                    mergedTag[tagKey] = tagValue
+                }
+                result["tag"] = mergedTag
+            } else if let originalDict = original[key] as? [String: Any],
+                      let updatedDict = newValue as? [String: Any] {
+                // 递归合并其他嵌套字典（如 equip_slots 如果是字典）
+                result[key] = deepMerge(original: originalDict, updated: updatedDict)
+            } else {
+                // 直接覆盖（包括 equips 数组等）
+                result[key] = newValue
+            }
+        }
+
+        return result
     }
 
     // MARK: - Private

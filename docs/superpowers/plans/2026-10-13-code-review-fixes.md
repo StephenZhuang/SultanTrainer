@@ -42,11 +42,23 @@
 
 **问题**: C-03 — `SaveData.swift:4-57` 存档 UI 状态字段（`sudan_box_show` 等）完全未建模，round-trip 会丢失
 
-**方案**: 采用"合并写入透传"策略（已在 `mergeWrite` 中实现）。需验证 `mergeWrite` 的合并逻辑覆盖了所有顶层未建模字段。
+**方案**: 采用"合并写入透传"策略。增强 `mergeWrite` 实现深度合并：
+- 顶层未建模字段直接保留
+- 卡牌数组（`cards`, `sudan_card_pool`）按 `uid` 匹配并深度合并每个卡牌的 `tag` 字典
+- 确保修改已知属性时不丢失未建模的 tag 字段（如 `own`, `adherent`, `sudan_card_init_life`, `card_vanishing` 等）
 
-**验证方式**: 写单元测试，构造含未建模字段的 JSON → 解码为 SaveData → 编码 → 合并 → 验证未建模字段保留。
+**实施内容**:
+1. 重构 `mergeWrite` 为调用 `deepMerge` 递归合并
+2. 新增 `deepMerge(original:updated:)` 处理嵌套字典和卡牌数组
+3. 新增 `mergeCardArrays(original:updated:)` 按 uid 匹配合并卡牌
+4. 新增 `mergeCard(original:updated:)` 深度合并单个卡牌的 `tag` 字典
+5. 补充单元测试 `testMergeWritePreservesCardTagFields` 验证卡牌 tag 保留
 
-**影响文件**: `Services/SaveManager.swift`（可能无需改代码，只需补测试）
+**影响文件**: 
+- `Services/SaveManager.swift` - 增强合并逻辑
+- `SultanTrainerTests/SaveManagerTests.swift` - 新增卡牌 tag 保留测试
+
+**状态**: ✅ 已完成（2026-10-13）
 
 ### 1.4 over_reason 默认值修正
 
