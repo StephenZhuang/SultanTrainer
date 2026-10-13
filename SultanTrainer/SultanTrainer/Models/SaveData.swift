@@ -22,6 +22,11 @@ struct SaveData: Codable {
     var gen_cards: [String: Int]
     var gen_tags: [String: Int]
     var ithink_card: Card?
+    var last_round_rite_data: [String: [String: RiteSlotData]]
+    var end_rites: [String: Int]
+    var auto_result_rites: [Int]
+    var rite_auto_result: Bool
+    var armageddon_rite_id: Int
 
     // MARK: - Codable 容错解码
 
@@ -30,6 +35,8 @@ struct SaveData: Codable {
         case saveTime, card_uid_index, rite_uid_index, success, over_reason
         case cards, rites, sudan_card_pool, counter, event_status
         case timing_rounds, gen_cards, gen_tags, ithink_card
+        case last_round_rite_data, end_rites, auto_result_rites
+        case rite_auto_result, armageddon_rite_id
     }
 
     init(from decoder: Decoder) throws {
@@ -54,5 +61,10 @@ struct SaveData: Codable {
         gen_cards = (try? container.decode([String: Int].self, forKey: .gen_cards)) ?? [:]
         gen_tags = (try? container.decode([String: Int].self, forKey: .gen_tags)) ?? [:]
         ithink_card = try? container.decode(Card.self, forKey: .ithink_card)
+        last_round_rite_data = (try? container.decode([String: [String: RiteSlotData]].self, forKey: .last_round_rite_data)) ?? [:]
+        end_rites = (try? container.decode([String: Int].self, forKey: .end_rites)) ?? [:]
+        auto_result_rites = (try? container.decode([Int].self, forKey: .auto_result_rites)) ?? []
+        rite_auto_result = (try? container.decode(Bool.self, forKey: .rite_auto_result)) ?? false
+        armageddon_rite_id = (try? container.decode(Int.self, forKey: .armageddon_rite_id)) ?? 0
     }
 }

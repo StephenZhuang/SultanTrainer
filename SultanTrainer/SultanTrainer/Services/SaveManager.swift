@@ -200,7 +200,7 @@ class SaveManager {
         }
     }
 
-    /// 深度合并两个 JSON 对象，特别处理卡牌数组中的 tag 字典
+    /// 深度合并两个 JSON 对象，特别处理卡牌数组中的 tag 字典和仪式数组
     private func deepMerge(original: [String: Any], updated: [String: Any]) -> [String: Any] {
         var result = original
 
@@ -210,6 +210,11 @@ class SaveManager {
                let originalArray = original[key] as? [[String: Any]],
                let updatedArray = newValue as? [[String: Any]] {
                 result[key] = mergeCardArrays(original: originalArray, updated: updatedArray)
+            } else if key == "rites",
+                      let originalArray = original[key] as? [[String: Any]],
+                      let updatedArray = newValue as? [[String: Any]] {
+                // 特殊处理仪式数组：按 uid 匹配并深度合并
+                result[key] = mergeRiteArrays(original: originalArray, updated: updatedArray)
             } else if let originalDict = original[key] as? [String: Any],
                       let updatedDict = newValue as? [String: Any] {
                 // 递归合并嵌套字典
@@ -274,6 +279,75 @@ class SaveManager {
             } else {
                 // 直接覆盖（包括 equips 数组等）
                 result[key] = newValue
+            }
+        }
+
+        return result
+    }
+
+    /// 合并仪式数组，按 uid 匹配并深度合并每个仪式
+    private func mergeRiteArrays(original: [[String: Any]], updated: [[String: Any]]) -> [[String: Any]] {
+        var originalByUid: [Int: [String: Any]] = [:]
+        for rite in original {
+            if let uid = rite["uid"] as? Int {
+                originalByUid[uid] = rite
+            }
+        }
+
+        var result: [[String: Any]] = []
+        for updatedRite in updated {
+            guard let uid = updatedRite["uid"] as? Int else {
+                result.append(updatedRite)
+                continue
+            }
+
+            if let originalRite = originalByUid[uid] {
+                result.append(mergeRite(original: originalRite, updated: updatedRite))
+            } else {
+                result.append(updatedRite)
+            }
+        }
+
+        return result
+    }
+
+    /// 合并单个仪式数据，深度合并 cards 数组中的每个卡牌
+    private func mergeRite(original: [String: Any], updated: [String: Any]) -> [String: Any] {
+        var result = original
+
+        for (key, newValue) in updated {
+            if key == "cards",
+               let originalCards = original["cards"] as? [[String: Any]?],
+               let updatedCards = newValue as? [[String: Any]?] {
+                result["cards"] = mergeRiteCards(original: originalCards, updated: updatedCards)
+            } else if let originalDict = original[key] as? [String: Any],
+                      let updatedDict = newValue as? [String: Any] {
+                result[key] = deepMerge(original: originalDict, updated: updatedDict)
+            } else {
+                result[key] = newValue
+            }
+        }
+
+        return result
+    }
+
+    /// 合并仪式中的卡牌数组，按索引位置逐个合并（保留 null 槽位）
+    private func mergeRiteCards(original: [[String: Any]?], updated: [[String: Any]?]) -> [[String: Any]?] {
+        var result: [[String: Any]?] = []
+        let count = max(original.count, updated.count)
+
+        for i in 0..<count {
+            let originalCard = i < original.count ? original[i] : nil
+            let updatedCard = i < updated.count ? updated[i] : nil
+
+            if let orig = originalCard, let upd = updatedCard {
+                result.append(mergeCard(original: orig, updated: upd))
+            } else if let upd = updatedCard {
+                result.append(upd)
+            } else if let orig = originalCard {
+                result.append(orig)
+            } else {
+                result.append(nil)
             }
         }
 

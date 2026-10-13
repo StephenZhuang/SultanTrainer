@@ -40,7 +40,12 @@
   "timing_rounds": {},
   "gen_cards": {},
   "gen_tags": {},
-  "ithink_card": null
+  "ithink_card": null,
+  "last_round_rite_data": {},
+  "end_rites": {},
+  "auto_result_rites": [],
+  "rite_auto_result": false,
+  "armageddon_rite_id": 0
 }
 ```
 
@@ -66,6 +71,11 @@
 | `gen_cards` | object | 卡牌生成计数 |
 | `gen_tags` | object | 标签生成计数 |
 | `ithink_card` | null/object | 当前思考中的卡 |
+| `last_round_rite_data` | object | 仪式上回合槽位数据（`{仪式ID: {槽位: {id, count}}}`），用于跟踪跨回合仪式进度 |
+| `end_rites` | object | 仪式结束回合记录（`{仪式ID: 回合数}`） |
+| `auto_result_rites` | array | 需要自动结算的仪式ID列表 |
+| `rite_auto_result` | bool | 仪式自动结算开关 |
+| `armageddon_rite_id` | int | 特殊仪式（末日仪式）ID |
 
 UI状态字段（`sudan_box_show`, `story_unshow`, `prestige_unshow`, `deadline_unshow`, `helpbtn_unshow`, `location_icon_show`, `change_desk_bg`, `after_round_auto_sort` 等）控制界面显示，修改器一般无需改动。
 
@@ -251,7 +261,8 @@ UI状态字段（`sudan_box_show`, `story_unshow`, `prestige_unshow`, `deadline_
 2. 修改时只更新已知的属性键（如 `physique`, `charm` 等）
 3. 保存时将修改后的模型编码为 JSON，与原始 JSON 深度合并
 4. 对于卡牌数组（`cards`, `sudan_card_pool`），按 `uid` 匹配并合并每个卡牌的 `tag` 字典
-5. 原子写入合并后的结果
+5. 对于仪式数组（`rites`），按 `uid` 匹配并深度合并每个仪式及其内部的 `cards` 数组
+6. 原子写入合并后的结果
 
 这样确保即使工具未建模某些字段，它们也能在 round-trip（读→改→写）过程中完整保留。
 

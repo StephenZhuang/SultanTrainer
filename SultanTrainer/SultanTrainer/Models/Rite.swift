@@ -46,3 +46,24 @@ struct TimingRound: Codable, Hashable {
         self.status = status
     }
 }
+
+/// 仪式槽位数据（用于 last_round_rite_data）
+struct RiteSlotData: Codable, Hashable {
+    var id: Int
+    var count: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case id, count
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? container.decode(Int.self, forKey: .id)) ?? 0
+        count = (try? container.decode(Int.self, forKey: .count)) ?? 0
+    }
+
+    init(id: Int, count: Int) {
+        self.id = id
+        self.count = count
+    }
+}
