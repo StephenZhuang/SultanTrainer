@@ -274,6 +274,20 @@ class AppViewModel: ObservableObject {
         return result
     }
 
+    func updateCardCount(uid: Int, count: Int) {
+        guard var save = saveData, let index = save.cards.firstIndex(where: { $0.uid == uid }) else { return }
+        save.cards[index].count = max(1, min(999, count))
+        saveData = save
+        markModified()
+    }
+
+    func updateCardLife(uid: Int, life: Int) {
+        guard var save = saveData, let index = save.cards.firstIndex(where: { $0.uid == uid }) else { return }
+        save.cards[index].life = max(0, min(999, life))
+        saveData = save
+        markModified()
+    }
+
     // MARK: - 人物属性代理
 
     func updateCharacterAttribute(characterUid: Int, attr: AttributeType, value: Int) {

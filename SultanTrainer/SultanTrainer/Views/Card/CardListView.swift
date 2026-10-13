@@ -122,14 +122,26 @@ struct CardListView: View {
                 .width(min: 50, ideal: 60)
 
                 TableColumn("数量") { card in
-                    Text("\(card.count)")
+                    EditableCardField(
+                        value: card.count,
+                        range: 1...999,
+                        onUpdate: { newValue in
+                            viewModel.updateCardCount(uid: card.uid, count: newValue)
+                        }
+                    )
                 }
-                .width(min: 40, ideal: 50)
+                .width(min: 60, ideal: 70)
 
                 TableColumn("生命") { card in
-                    Text("\(card.life)")
+                    EditableCardField(
+                        value: card.life,
+                        range: 0...999,
+                        onUpdate: { newValue in
+                            viewModel.updateCardLife(uid: card.uid, life: newValue)
+                        }
+                    )
                 }
-                .width(min: 40, ideal: 50)
+                .width(min: 60, ideal: 70)
 
                 TableColumn("") { card in
                     Button {
