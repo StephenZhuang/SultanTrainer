@@ -331,6 +331,29 @@ class AppViewModel: ObservableObject {
         markModified()
     }
 
+    func getRiteRemainingRounds(riteId: Int) -> Int? {
+        return saveData?.end_rites[String(riteId)]
+    }
+
+    func setRiteRemainingRounds(riteId: Int, value: Int) {
+        guard var save = saveData else { return }
+        save.end_rites[String(riteId)] = value
+        saveData = save
+        markModified()
+    }
+
+    func getRiteName(riteId: Int) -> String {
+        return configLoader.getRiteName(id: riteId)
+    }
+
+    func getRiteText(riteId: Int) -> String {
+        return configLoader.getRiteText(id: riteId)
+    }
+
+    func getRiteWaitingRound(riteId: Int) -> Int {
+        return configLoader.getRiteWaitingRound(id: riteId)
+    }
+
     // MARK: - 全局数据代理
 
     func updateTotalPoint(_ value: Int) {

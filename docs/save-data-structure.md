@@ -72,7 +72,7 @@
 | `gen_tags` | object | 标签生成计数 |
 | `ithink_card` | null/object | 当前思考中的卡 |
 | `last_round_rite_data` | object | 仪式上回合槽位数据（`{仪式ID: {槽位: {id, count}}}`），用于跟踪跨回合仪式进度 |
-| `end_rites` | object | 仪式结束回合记录（`{仪式ID: 回合数}`） |
+| `end_rites` | object | 仪式剩余回合数（`{仪式ID: 剩余回合数}`），key 为仪式模板ID的字符串形式 |
 | `auto_result_rites` | array | 需要自动结算的仪式ID列表 |
 | `rite_auto_result` | bool | 仪式自动结算开关 |
 | `armageddon_rite_id` | int | 特殊仪式（末日仪式）ID |

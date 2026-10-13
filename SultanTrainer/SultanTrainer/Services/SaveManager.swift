@@ -169,7 +169,7 @@ class SaveManager {
 
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
-            try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
+            _ = try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
         } else {
             try fm.moveItem(at: tempUrl, to: url)
         }
@@ -194,7 +194,7 @@ class SaveManager {
 
         let fm = FileManager.default
         if fm.fileExists(atPath: url.path) {
-            try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
+            _ = try fm.replaceItemAt(url, withItemAt: tempUrl, backupItemName: "save_crash_backup")
         } else {
             try fm.moveItem(at: tempUrl, to: url)
         }

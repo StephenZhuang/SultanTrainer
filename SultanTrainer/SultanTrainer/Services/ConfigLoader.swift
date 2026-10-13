@@ -12,6 +12,7 @@ class ConfigLoader {
     var upgradeTemplates: [Int: UpgradeTemplate] = [:]
     var questTemplates: [Int: QuestTemplate] = [:]
     var overTemplates: [Int: OverTemplate] = [:]
+    var riteTemplates: [Int: RiteTemplate] = [:]
     
     /// 自动定位游戏config目录
     func locateConfigDirectory() -> URL? {
@@ -53,11 +54,29 @@ class ConfigLoader {
 
         do { try loadOverConfig(from: configDir) }
         catch { Self.logger.error("加载结局配置失败: \(error.localizedDescription, privacy: .public)") }
+
+        do { try loadRiteConfig(from: configDir) }
+        catch { Self.logger.error("加载仪式配置失败: \(error.localizedDescription, privacy: .public)") }
     }
     
     /// 获取卡牌名称，找不到时返回ID字符串
     func getCardName(id: Int) -> String {
         return cardTemplates[id]?.name ?? "\(id)"
+    }
+
+    /// 获取仪式名称，找不到时返回ID字符串
+    func getRiteName(id: Int) -> String {
+        return riteTemplates[id]?.name ?? "\(id)"
+    }
+
+    /// 获取仪式描述文本
+    func getRiteText(id: Int) -> String {
+        return riteTemplates[id]?.text ?? ""
+    }
+
+    /// 获取仪式等待回合数（倒计时）
+    func getRiteWaitingRound(id: Int) -> Int {
+        return riteTemplates[id]?.waitingRound ?? 0
     }
 
     /// 获取卡牌显示名称：custom_name > 存档角色名（主角卡/分身卡）> 模板名（苏丹卡追加等级）
@@ -347,6 +366,27 @@ class ConfigLoader {
         } else {
             Self.logger.error("结局配置解码失败: 无法解析为字典格式")
             throw ConfigError.loadFailed("over.json", underlying: NSError(domain: "ConfigLoader", code: -1, userInfo: [NSLocalizedDescriptionKey: "解码失败"]))
+        }
+    }
+
+    private func loadRiteConfig(from configDir: URL) throws {
+        let riteDir = configDir.appendingPathComponent("rite")
+        guard FileManager.default.fileExists(atPath: riteDir.path) else {
+            Self.logger.warning("仪式配置目录不存在: \(riteDir.path, privacy: .public)")
+            return
+        }
+        let files = try FileManager.default.contentsOfDirectory(at: riteDir, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "json" }
+        for file in files {
+            do {
+                let rawData = try Data(contentsOf: file)
+                let data = try stripJSONComments(from: rawData)
+                if let template = try? JSONDecoder().decode(RiteTemplate.self, from: data) {
+                    riteTemplates[template.id] = template
+                }
+            } catch {
+                Self.logger.warning("加载仪式配置失败 \(file.lastPathComponent): \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 }
