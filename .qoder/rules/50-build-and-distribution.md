@@ -42,6 +42,38 @@ codesign --sign - ~/Applications/SultanTrainer.app
 2. 代码修改后：重新 `./build.sh` → 覆盖旧版本
 3. 通过 Spotlight 或 Launchpad 启动
 
+## DMG 打包分发
+
+给他人分发时打包成 DMG，采用 ad-hoc 签名（免费，对方首次打开需右键→打开放行 Gatekeeper）。
+
+### 打包命令
+
+```bash
+./build-dmg.sh              # 构建当前架构 (arm64)
+./build-dmg.sh --universal  # 构建通用架构 (arm64 + x86_64)
+```
+
+产物输出到 `./dist/SultanTrainer.dmg`。
+
+### DMG 内容结构
+
+```
+SultanTrainer.dmg
+├── SultanTrainer.app
+└── Applications (快捷方式，拖拽安装)
+```
+
+### 签名说明
+
+- 使用 `codesign --sign -` 做 ad-hoc 签名
+- 无需 Apple Developer 账号
+- 对方首次打开需在"系统设置 → 隐私与安全性"中点击"仍要打开"
+
+### 分发须知
+
+告知接收方：
+> 首次打开如提示"无法验证开发者"，请右键点击 App → 选择"打开" → 再次确认"打开"
+
 ## AI 行为约束
 
 - **构建/测试一律后台执行**：使用 `run_in_background: true` 运行 xcodebuild、xcodebuild test 等耗时命令，禁止占用用户屏幕
