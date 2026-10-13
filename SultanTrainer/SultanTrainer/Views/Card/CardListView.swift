@@ -104,38 +104,43 @@ struct CardListView: View {
             Table(filteredCards, selection: $selectedCardUid) {
                 TableColumn("位置") { card in
                     Text("\(card.bagpos)")
-                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
 
                 TableColumn("UID") { card in
                     Text("\(card.uid)")
-                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 50, ideal: 60)
 
                 TableColumn("名称") { card in
                     Text(viewModel.cardDisplayName(card: card, saveName: viewModel.saveData?.name))
-                        .onTapGesture { detailCard = card }
                 }
 
                 TableColumn("类别") { card in
                     Text(viewModel.categorizeCard(card).rawValue)
-                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 50, ideal: 60)
 
                 TableColumn("数量") { card in
                     Text("\(card.count)")
-                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
 
                 TableColumn("生命") { card in
                     Text("\(card.life)")
-                        .onTapGesture { detailCard = card }
                 }
                 .width(min: 40, ideal: 50)
+
+                TableColumn("") { card in
+                    Button {
+                        detailCard = card
+                    } label: {
+                        Image(systemName: "arrow.right.circle")
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.borderless)
+                }
+                .width(min: 30, ideal: 30)
             }
         }
         .sheet(isPresented: $showPicker) {
@@ -170,7 +175,9 @@ struct CardListView: View {
             Button("取消", role: .cancel) { pendingReplaceTemplateId = nil }
             Button("替换") {
                 if let uid = selectedCardUid, let templateId = pendingReplaceTemplateId {
-                    viewModel.replaceCard(uid: uid, newTemplateId: templateId)
+                    if viewModel.replaceCard(uid: uid, newTemplateId: templateId) == nil {
+                        viewModel.errorMessage = "卡牌替换失败"
+                    }
                 }
                 pendingReplaceTemplateId = nil
             }

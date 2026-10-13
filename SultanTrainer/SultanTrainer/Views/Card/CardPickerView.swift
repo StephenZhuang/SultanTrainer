@@ -77,9 +77,14 @@ struct CardPickerView: View {
                     Text(viewModel.categorizeTemplate(template).rawValue)
                         .font(.caption)
                         .foregroundStyle(.blue)
+                    Button {
+                        detailTemplateId = template.id
+                    } label: {
+                        Image(systemName: "arrow.right.circle")
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.borderless)
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { detailTemplateId = template.id }
                 .tag(template.id as Int?)
             }
 
