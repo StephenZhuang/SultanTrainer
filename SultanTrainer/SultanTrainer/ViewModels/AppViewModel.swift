@@ -216,10 +216,11 @@ class AppViewModel: ObservableObject {
 
     var characters: [Card] {
         guard let save = saveData else { return [] }
+        let protagonistIds = [2000001, 2000002, 2000003, 2000861]
         return save.cards.filter { card in
             card.bagpos > 0 &&
             cardService.categorize(card: card) == .character &&
-            card.tag["adherent"] == 1
+            (card.tag["adherent"] == 1 || protagonistIds.contains(card.templateId))
         }
     }
 
@@ -313,6 +314,15 @@ class AppViewModel: ObservableObject {
               let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
         let hurtCardId = 2000098
         save.cards[index].equips.removeAll { $0.templateId == hurtCardId }
+        saveData = save
+        markModified()
+    }
+
+    func removeCurseTag(characterUid: Int) {
+        guard var save = saveData,
+              let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        let curseCardId = 2000163
+        save.cards[index].equips.removeAll { $0.templateId == curseCardId }
         saveData = save
         markModified()
     }

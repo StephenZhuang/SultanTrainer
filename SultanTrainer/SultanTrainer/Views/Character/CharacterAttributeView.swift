@@ -64,6 +64,11 @@ struct CharacterAttributeView: View {
                             viewModel.removeHurtTag(characterUid: uid)
                         }
                         .disabled(!character.equips.contains { $0.templateId == 2000098 })
+
+                        Button("医治诅咒") {
+                            viewModel.removeCurseTag(characterUid: uid)
+                        }
+                        .disabled(!character.equips.contains { $0.templateId == 2000163 })
                     }
                 }
                 .padding()
