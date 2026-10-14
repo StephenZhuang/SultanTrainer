@@ -14,6 +14,10 @@ class ConfigLoader {
     var overTemplates: [Int: OverTemplate] = [:]
     var riteTemplates: [Int: RiteTemplate] = [:]
     
+    /// 仪式改名映射：存档 custom_name key → 实际显示名
+    /// 例如 "change_card_name_5000301_03" → "镜中的生灵"
+    var cardNameChanges: [String: String] = [:]
+    
     /// 自动定位游戏config目录
     func locateConfigDirectory() -> URL? {
         // 1. 已知路径
@@ -79,9 +83,15 @@ class ConfigLoader {
         return riteTemplates[id]?.waitingRound ?? 0
     }
 
-    /// 获取卡牌显示名称：custom_name > 存档角色名（主角卡/分身卡）> 模板名（苏丹卡追加等级）
-    func getCardDisplayName(card: Card, saveName: String? = nil) -> String {
+    /// 获取卡牌显示名称：玩家改名 > 仪式改名 > 存档角色名（主角卡/分身卡）> 模板名（苏丹卡追加等级）
+    func getCardDisplayName(card: Card, saveName: String? = nil, playerCardName: [String: String]? = nil) -> String {
+        if let playerCardName = playerCardName, let name = playerCardName["\(card.templateId)"] {
+            return name
+        }
         if !card.custom_name.isEmpty {
+            if let resolved = cardNameChanges[card.custom_name] {
+                return resolved
+            }
             return card.custom_name
         }
         if let saveName = saveName, !saveName.isEmpty {
@@ -384,8 +394,47 @@ class ConfigLoader {
                 if let template = try? JSONDecoder().decode(RiteTemplate.self, from: data) {
                     riteTemplates[template.id] = template
                 }
+                extractCardNameChanges(from: data)
             } catch {
                 Self.logger.warning("加载仪式配置失败 \(file.lastPathComponent): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+    
+    /// 从仪式配置原始 JSON 中提取 change_card_name 映射
+    /// 存档 custom_name 格式: "change_card_name_5000301_03"（下划线、无slot后缀）
+    /// 配置 key 格式: "change_card_name.5000301_03.s1"（点号、有slot后缀）
+    private func extractCardNameChanges(from data: Data) {
+        guard let json = try? JSONSerialization.jsonObject(with: data) else { return }
+        var stack: [Any] = [json]
+        while let current = stack.popLast() {
+            if let dict = current as? [String: Any] {
+                for (key, value) in dict {
+                    if let name = value as? String, key.hasPrefix("change_card_name.") || key.hasPrefix("total.change_card_name.") {
+                        // 将配置 key 转换为存档 custom_name 格式：
+                        // "change_card_name.5000301_03.s1" → "change_card_name_5000301_03"
+                        // "total.change_card_name.5008205_01.2000195" → "change_card_name_5008205_01"
+                        let normalized = key.replacingOccurrences(of: ".", with: "_")
+                            .replacingOccurrences(of: "total_change_card_name_", with: "change_card_name_")
+                        // 去掉末尾的 slot 后缀（如 _s1, _s2）或额外的 ID 段（如 _2000195）
+                        let saveKey: String
+                        if let range = normalized.range(of: "_s", options: .backwards),
+                           range.upperBound < normalized.endIndex,
+                           normalized[range.upperBound...].allSatisfy({ $0.isNumber }) {
+                            saveKey = String(normalized[..<range.lowerBound])
+                        } else if let lastUnderscore = normalized.lastIndex(of: "_"),
+                                  lastUnderscore > normalized.index(normalized.startIndex, offsetBy: "change_card_name".count) {
+                            saveKey = String(normalized[..<lastUnderscore])
+                        } else {
+                            saveKey = normalized
+                        }
+                        cardNameChanges[saveKey] = name
+                    } else {
+                        stack.append(value)
+                    }
+                }
+            } else if let array = current as? [Any] {
+                stack.append(contentsOf: array)
             }
         }
     }

@@ -27,6 +27,7 @@ struct SaveData: Codable {
     var auto_result_rites: [Int]
     var rite_auto_result: Bool
     var armageddon_rite_id: Int
+    var player_card_name: [String: String]
 
     // MARK: - Codable 容错解码
 
@@ -36,7 +37,7 @@ struct SaveData: Codable {
         case cards, rites, sudan_card_pool, counter, event_status
         case timing_rounds, gen_cards, gen_tags, ithink_card
         case last_round_rite_data, end_rites, auto_result_rites
-        case rite_auto_result, armageddon_rite_id
+        case rite_auto_result, armageddon_rite_id, player_card_name
     }
 
     init(from decoder: Decoder) throws {
@@ -66,5 +67,6 @@ struct SaveData: Codable {
         auto_result_rites = (try? container.decode([Int].self, forKey: .auto_result_rites)) ?? []
         rite_auto_result = (try? container.decode(Bool.self, forKey: .rite_auto_result)) ?? false
         armageddon_rite_id = (try? container.decode(Int.self, forKey: .armageddon_rite_id)) ?? 0
+        player_card_name = (try? container.decode([String: String].self, forKey: .player_card_name)) ?? [:]
     }
 }

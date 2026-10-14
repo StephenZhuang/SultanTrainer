@@ -169,7 +169,7 @@ class AppViewModel: ObservableObject {
     }
 
     func cardDisplayName(card: Card, saveName: String? = nil) -> String {
-        configLoader.getCardDisplayName(card: card, saveName: saveName)
+        configLoader.getCardDisplayName(card: card, saveName: saveName, playerCardName: saveData?.player_card_name)
     }
 
     func categorizeCard(_ card: Card) -> CardCategory {
