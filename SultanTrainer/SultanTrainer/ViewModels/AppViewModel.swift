@@ -215,7 +215,9 @@ class AppViewModel: ObservableObject {
     var characters: [Card] {
         guard let save = saveData else { return [] }
         return save.cards.filter { card in
-            card.bagpos > 0 && cardService.categorize(card: card) == .character
+            card.bagpos > 0 &&
+            cardService.categorize(card: card) == .character &&
+            card.tag["adherent"] == 1
         }
     }
 
