@@ -99,6 +99,8 @@ struct ContentView: View {
                 CardListView()
             case .characterAttribute:
                 CharacterAttributeView()
+            case .gemInlay:
+                GemInlayView()
             case .counter:
                 CounterEditorView()
             case .rite:

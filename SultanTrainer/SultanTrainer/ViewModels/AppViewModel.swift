@@ -8,6 +8,7 @@ class AppViewModel: ObservableObject {
     let configLoader = ConfigLoader()
     private let saveManager = SaveManager()
     let cardService: CardService
+    let gemInlayService: GemInlayService
     private let quickModifiers = QuickModifiers()
     
     // MARK: - 存档数据
@@ -27,6 +28,7 @@ class AppViewModel: ObservableObject {
     
     init() {
         self.cardService = CardService(configLoader: configLoader)
+        self.gemInlayService = GemInlayService(configLoader: configLoader)
     }
     
     /// 启动时自动加载
@@ -442,5 +444,49 @@ class AppViewModel: ObservableObject {
         quickModifiers.completeAllQuests(in: &global, allQuestIds: allIds)
         globalData = global
         markModified()
+    }
+    
+    // MARK: - 宝石镶嵌代理
+    
+    var equipmentList: [Card] {
+        guard let save = saveData else { return [] }
+        return gemInlayService.getEquipmentList(from: save)
+    }
+    
+    var gemList: [Card] {
+        guard let save = saveData else { return [] }
+        return gemInlayService.getGemList(from: save)
+    }
+    
+    func isInlaid(equipment: Card) -> Bool {
+        return gemInlayService.isInlaid(equipment: equipment)
+    }
+    
+    func getInlaidGem(from equipment: Card) -> Card? {
+        return gemInlayService.getInlaidGem(from: equipment)
+    }
+    
+    func inlayGem(equipmentUid: Int, gemUid: Int) -> Card? {
+        guard var save = saveData else { return nil }
+        let oldGem = gemInlayService.inlayGem(to: equipmentUid, gemUid: gemUid, in: &save)
+        saveData = save
+        markModified()
+        return oldGem
+    }
+    
+    func removeGem(equipmentUid: Int) -> Card? {
+        guard var save = saveData else { return nil }
+        let gem = gemInlayService.removeGem(from: equipmentUid, in: &save)
+        saveData = save
+        markModified()
+        return gem
+    }
+    
+    func getCardDisplayName(card: Card) -> String {
+        return gemInlayService.getCardDisplayName(card: card)
+    }
+    
+    func getGemAttributeDescription(gem: Card) -> String {
+        return gemInlayService.getGemAttributeDescription(gem: gem)
     }
 }

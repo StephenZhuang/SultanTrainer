@@ -32,6 +32,6 @@ final class EnumsTests: XCTestCase {
     }
     
     func testSidebarItemAllCases() {
-        XCTAssertEqual(SidebarItem.allCases.count, 6)
+        XCTAssertEqual(SidebarItem.allCases.count, 7)
     }
 }
