@@ -22,7 +22,7 @@ echo "==> 清理旧的构建产物"
 rm -rf "$DERIVED_DATA"
 
 echo "==> 构建 Release"
-xcodebuild -project SultanTrainer.xcodeproj \
+xcodebuild -project SultanTrainer/SultanTrainer.xcodeproj \
            -scheme SultanTrainer \
            -configuration "$BUILD_CONFIG" \
            -derivedDataPath "$DERIVED_DATA" \
