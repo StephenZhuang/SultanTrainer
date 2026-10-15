@@ -8,6 +8,7 @@ class AppViewModel: ObservableObject {
     let configLoader = ConfigLoader()
     private let saveManager = SaveManager()
     let cardService: CardService
+    let gemInlayService: GemInlayService
     private let quickModifiers = QuickModifiers()
     
     // MARK: - 存档数据
@@ -27,6 +28,7 @@ class AppViewModel: ObservableObject {
     
     init() {
         self.cardService = CardService(configLoader: configLoader)
+        self.gemInlayService = GemInlayService(configLoader: configLoader)
     }
     
     /// 启动时自动加载
@@ -169,7 +171,7 @@ class AppViewModel: ObservableObject {
     }
 
     func cardDisplayName(card: Card, saveName: String? = nil) -> String {
-        configLoader.getCardDisplayName(card: card, saveName: saveName)
+        configLoader.getCardDisplayName(card: card, saveName: saveName, playerCardName: saveData?.player_card_name)
     }
 
     func categorizeCard(_ card: Card) -> CardCategory {
@@ -214,10 +216,11 @@ class AppViewModel: ObservableObject {
 
     var characters: [Card] {
         guard let save = saveData else { return [] }
+        let protagonistIds = [2000001, 2000002, 2000003, 2000861]
         return save.cards.filter { card in
             card.bagpos > 0 &&
             cardService.categorize(card: card) == .character &&
-            card.tag["adherent"] == 1
+            (card.tag["adherent"] == 1 || protagonistIds.contains(card.templateId))
         }
     }
 
@@ -311,6 +314,29 @@ class AppViewModel: ObservableObject {
               let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
         let hurtCardId = 2000098
         save.cards[index].equips.removeAll { $0.templateId == hurtCardId }
+        saveData = save
+        markModified()
+    }
+
+    func removeCurseTag(characterUid: Int) {
+        guard var save = saveData,
+              let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        let curseCardId = 2000163
+        save.cards[index].equips.removeAll { $0.templateId == curseCardId }
+        saveData = save
+        markModified()
+    }
+
+    func setLockFriendship(characterUid: Int, enabled: Bool) {
+        guard var save = saveData,
+              let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        let currentValue = save.cards[index].tag["lock_friendship"] == 1
+        guard currentValue != enabled else { return }
+        if enabled {
+            save.cards[index].tag["lock_friendship"] = 1
+        } else {
+            save.cards[index].tag.removeValue(forKey: "lock_friendship")
+        }
         saveData = save
         markModified()
     }
@@ -442,5 +468,49 @@ class AppViewModel: ObservableObject {
         quickModifiers.completeAllQuests(in: &global, allQuestIds: allIds)
         globalData = global
         markModified()
+    }
+    
+    // MARK: - 宝石镶嵌代理
+    
+    var equipmentList: [Card] {
+        guard let save = saveData else { return [] }
+        return gemInlayService.getEquipmentList(from: save)
+    }
+    
+    var gemList: [Card] {
+        guard let save = saveData else { return [] }
+        return gemInlayService.getGemList(from: save)
+    }
+    
+    func isInlaid(equipment: Card) -> Bool {
+        return gemInlayService.isInlaid(equipment: equipment)
+    }
+    
+    func getInlaidGem(from equipment: Card) -> Card? {
+        return gemInlayService.getInlaidGem(from: equipment)
+    }
+    
+    func inlayGem(equipmentUid: Int, gemUid: Int) -> Card? {
+        guard var save = saveData else { return nil }
+        let oldGem = gemInlayService.inlayGem(to: equipmentUid, gemUid: gemUid, in: &save)
+        saveData = save
+        markModified()
+        return oldGem
+    }
+    
+    func removeGem(equipmentUid: Int) -> Card? {
+        guard var save = saveData else { return nil }
+        let gem = gemInlayService.removeGem(from: equipmentUid, in: &save)
+        saveData = save
+        markModified()
+        return gem
+    }
+    
+    func getCardDisplayName(card: Card) -> String {
+        return gemInlayService.getCardDisplayName(card: card)
+    }
+    
+    func getGemAttributeDescription(gem: Card) -> String {
+        return gemInlayService.getGemAttributeDescription(gem: gem)
     }
 }
