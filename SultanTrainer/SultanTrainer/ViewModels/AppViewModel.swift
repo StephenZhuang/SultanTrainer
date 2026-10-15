@@ -327,6 +327,20 @@ class AppViewModel: ObservableObject {
         markModified()
     }
 
+    func setLockFriendship(characterUid: Int, enabled: Bool) {
+        guard var save = saveData,
+              let index = save.cards.firstIndex(where: { $0.uid == characterUid }) else { return }
+        let currentValue = save.cards[index].tag["lock_friendship"] == 1
+        guard currentValue != enabled else { return }
+        if enabled {
+            save.cards[index].tag["lock_friendship"] = 1
+        } else {
+            save.cards[index].tag.removeValue(forKey: "lock_friendship")
+        }
+        saveData = save
+        markModified()
+    }
+
     // MARK: - 仪式代理
 
     func assignCardToRiteSlot(riteIndex: Int, slotIndex: Int, templateId: Int) {

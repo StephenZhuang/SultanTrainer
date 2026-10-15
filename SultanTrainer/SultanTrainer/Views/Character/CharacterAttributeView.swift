@@ -5,6 +5,7 @@ struct CharacterAttributeView: View {
     @State private var selectedCharacterUid: Int?
     @State private var editingValues: [String: Int] = [:]
     @State private var hasAnimalHandlingSlot: Bool = false
+    @State private var hasLockFriendship: Bool = false
 
     private var characters: [Card] {
         viewModel.characters
@@ -28,50 +29,72 @@ struct CharacterAttributeView: View {
             if let uid = selectedCharacterUid,
                let character = viewModel.saveData?.cards.first(where: { $0.uid == uid }) {
 
-                VStack(spacing: 12) {
-                    ForEach(AttributeType.allCases) { attr in
-                        HStack {
-                            Text(attr.displayName)
-                                .frame(width: 60, alignment: .leading)
+                // 属性区域
+                GroupBox("属性") {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), alignment: .leading),
+                        GridItem(.flexible(), alignment: .leading)
+                    ], spacing: 12) {
+                        ForEach(AttributeType.allCases) { attr in
+                            HStack {
+                                Text(attr.displayName)
+                                    .frame(width: 40, alignment: .leading)
 
-                            TextField("", value: attributeBinding(for: attr, character: character), format: .number)
-                                .frame(width: 80)
-                                .textFieldStyle(.roundedBorder)
-                                .onChange(of: editingValues[attr.rawValue]) { _, newValue in
-                                    if let val = newValue, val > 999 {
-                                        editingValues[attr.rawValue] = 999
+                                TextField("", value: attributeBinding(for: attr, character: character), format: .number)
+                                    .frame(width: 60)
+                                    .textFieldStyle(.roundedBorder)
+                                    .onChange(of: editingValues[attr.rawValue]) { _, newValue in
+                                        if let val = newValue, val > 999 {
+                                            editingValues[attr.rawValue] = 999
+                                        }
                                     }
+
+                                Stepper("", value: attributeBinding(for: attr, character: character), in: 0...999)
+                                    .labelsHidden()
+
+                                if let val = editingValues[attr.rawValue], val > 999 || val < 0 {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundStyle(.orange)
                                 }
-
-                            Stepper("", value: attributeBinding(for: attr, character: character), in: 0...999)
-                                .labelsHidden()
-
-                            if let val = editingValues[attr.rawValue], val > 999 || val < 0 {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
                             }
                         }
                     }
+                    .padding(.vertical, 4)
+                }
 
-                    Divider()
-
+                // 装备区域
+                GroupBox("装备") {
                     HStack {
                         Toggle("驯兽槽", isOn: $hasAnimalHandlingSlot)
-
                         Spacer()
-
-                        Button("医治受伤") {
-                            viewModel.removeHurtTag(characterUid: uid)
-                        }
-                        .disabled(!character.equips.contains { $0.templateId == 2000098 })
-
-                        Button("医治诅咒") {
-                            viewModel.removeCurseTag(characterUid: uid)
-                        }
-                        .disabled(!character.equips.contains { $0.templateId == 2000163 })
                     }
+                    .padding(.vertical, 4)
                 }
-                .padding()
+
+                // 状态区域
+                GroupBox("状态") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Button("医治受伤") {
+                                viewModel.removeHurtTag(characterUid: uid)
+                            }
+                            .disabled(!character.equips.contains { $0.templateId == 2000098 })
+
+                            Button("医治诅咒") {
+                                viewModel.removeCurseTag(characterUid: uid)
+                            }
+                            .disabled(!character.equips.contains { $0.templateId == 2000163 })
+
+                            Spacer()
+                        }
+
+                        Toggle("命运的羁绊", isOn: $hasLockFriendship)
+                            .onChange(of: hasLockFriendship) { _, newValue in
+                                viewModel.setLockFriendship(characterUid: uid, enabled: newValue)
+                            }
+                    }
+                    .padding(.vertical, 4)
+                }
 
                 Button("应用修改") {
                     applyAttributes(characterUid: uid)
@@ -108,6 +131,7 @@ struct CharacterAttributeView: View {
             editingValues[attr.rawValue] = character.tag[attr.rawValue] ?? 0
         }
         hasAnimalHandlingSlot = character.equip_slots.contains("animal_handling")
+        hasLockFriendship = character.tag["lock_friendship"] == 1
     }
 
     private func applyAttributes(characterUid: Int) {
