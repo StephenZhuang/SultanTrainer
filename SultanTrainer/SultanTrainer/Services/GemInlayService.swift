@@ -25,7 +25,7 @@ class GemInlayService {
     
     /// 检查装备是否已镶嵌宝石
     func isInlaid(equipment: Card) -> Bool {
-        return equipment.tag["已镶嵌"] == 1
+        return equipment.tag["bejewel"] == 1
     }
     
     /// 获取装备上已镶嵌的宝石
@@ -61,7 +61,7 @@ class GemInlayService {
         inlaidGem.bagpos = 0
         
         save.cards[equipmentIndex].equips.append(inlaidGem)
-        save.cards[equipmentIndex].tag["已镶嵌"] = 1
+        save.cards[equipmentIndex].tag["bejewel"] = 1
         
         // 从背包中移除宝石
         save.cards.remove(at: gemIndex)
@@ -86,7 +86,7 @@ class GemInlayService {
         
         // 从装备上移除宝石
         save.cards[equipmentIndex].equips.removeAll { $0.tag["宝石"] == 1 }
-        save.cards[equipmentIndex].tag.removeValue(forKey: "已镶嵌")
+        save.cards[equipmentIndex].tag.removeValue(forKey: "bejewel")
         
         // 将宝石放回背包
         var returnedGem = gem
