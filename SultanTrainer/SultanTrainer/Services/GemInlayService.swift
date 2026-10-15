@@ -9,17 +9,27 @@ class GemInlayService {
         self.configLoader = configLoader
     }
     
-    /// 获取背包中的装备列表（tag中有"装备"标签的卡牌）
+    private func isEquipment(_ card: Card) -> Bool {
+        guard let template = configLoader.cardTemplates[card.templateId] else { return false }
+        return template.tag["装备"] == 1
+    }
+    
+    private func isGem(_ card: Card) -> Bool {
+        guard let template = configLoader.cardTemplates[card.templateId] else { return false }
+        return template.tag["宝石"] == 1
+    }
+    
+    /// 获取背包中的装备列表（模板 tag 中有"装备"标签的卡牌）
     func getEquipmentList(from save: SaveData) -> [Card] {
         return save.cards.filter { card in
-            card.bagpos > 0 && card.tag["装备"] == 1
+            card.bagpos > 0 && isEquipment(card)
         }
     }
     
-    /// 获取背包中的宝石列表（tag中有"宝石"标签的卡牌）
+    /// 获取背包中的宝石列表（模板 tag 中有"宝石"标签的卡牌）
     func getGemList(from save: SaveData) -> [Card] {
         return save.cards.filter { card in
-            card.bagpos > 0 && card.tag["宝石"] == 1
+            card.bagpos > 0 && isGem(card)
         }
     }
     
@@ -31,7 +41,7 @@ class GemInlayService {
     /// 获取装备上已镶嵌的宝石
     func getInlaidGem(from equipment: Card) -> Card? {
         guard isInlaid(equipment: equipment) else { return nil }
-        return equipment.equips.first { $0.tag["宝石"] == 1 }
+        return equipment.equips.first { isGem($0) }
     }
     
     /// 镶嵌宝石到装备（如果已有宝石则替换）
@@ -49,7 +59,7 @@ class GemInlayService {
         // 如果已镶嵌，先拆下旧宝石
         if isInlaid(equipment: save.cards[equipmentIndex]) {
             oldGem = getInlaidGem(from: save.cards[equipmentIndex])
-            save.cards[equipmentIndex].equips.removeAll { $0.tag["宝石"] == 1 }
+            save.cards[equipmentIndex].equips.removeAll { isGem($0) }
         }
         
         // 获取宝石卡牌
@@ -85,7 +95,7 @@ class GemInlayService {
         }
         
         // 从装备上移除宝石
-        save.cards[equipmentIndex].equips.removeAll { $0.tag["宝石"] == 1 }
+        save.cards[equipmentIndex].equips.removeAll { isGem($0) }
         save.cards[equipmentIndex].tag.removeValue(forKey: "bejewel")
         
         // 将宝石放回背包
