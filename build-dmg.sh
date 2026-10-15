@@ -37,7 +37,7 @@ fi
 echo "==> 构建产物: $APP_PATH"
 
 echo "==> Ad-hoc 签名"
-codesign --deep --sign - "$APP_PATH"
+codesign --force --deep --sign - "$APP_PATH"
 
 STAGING=$(mktemp -d)
 trap "rm -rf '$STAGING'" EXIT
